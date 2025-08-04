@@ -10,6 +10,8 @@ import {
   Settings as SettingsIcon,
   Code as CodeIcon,
   Storage as StorageIcon,
+  CloudUpload as UploadIcon,
+  Terminal as TerminalIcon,
 } from '@mui/icons-material';
 
 interface TopBarProps {
@@ -17,6 +19,8 @@ interface TopBarProps {
   onToggleWorkpad: () => void;
   onOpenSettings: () => void;
   onOpenKnowledge: () => void;
+  onOpenFileUpload: () => void;
+  onOpenCodeExecution: () => void;
   isWorkpadOpen: boolean;
 }
 
@@ -25,6 +29,8 @@ export const TopBar: React.FC<TopBarProps> = ({
   onToggleWorkpad,
   onOpenSettings,
   onOpenKnowledge,
+  onOpenFileUpload,
+  onOpenCodeExecution,
   isWorkpadOpen,
 }) => {
   return (
@@ -102,8 +108,27 @@ export const TopBar: React.FC<TopBarProps> = ({
         <Box sx={{ display: 'flex', gap: 1 }}>
           <IconButton
             color="inherit"
+            aria-label="upload files"
+            onClick={onOpenFileUpload}
+            title="Upload Files to Knowledge Base"
+          >
+            <UploadIcon />
+          </IconButton>
+          
+          <IconButton
+            color="inherit"
+            aria-label="code execution"
+            onClick={onOpenCodeExecution}
+            title="Code Execution Environment"
+          >
+            <TerminalIcon />
+          </IconButton>
+          
+          <IconButton
+            color="inherit"
             aria-label="toggle workpad"
             onClick={onToggleWorkpad}
+            title="Toggle Workpad"
             sx={{ 
               bgcolor: isWorkpadOpen ? 'action.selected' : 'transparent',
             }}
@@ -115,6 +140,7 @@ export const TopBar: React.FC<TopBarProps> = ({
             color="inherit"
             aria-label="knowledge base"
             onClick={onOpenKnowledge}
+            title="Knowledge Base"
           >
             <StorageIcon />
           </IconButton>
@@ -123,6 +149,7 @@ export const TopBar: React.FC<TopBarProps> = ({
             color="inherit"
             aria-label="settings"
             onClick={onOpenSettings}
+            title="Settings"
           >
             <SettingsIcon />
           </IconButton>

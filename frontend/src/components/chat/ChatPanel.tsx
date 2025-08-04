@@ -9,11 +9,22 @@ import {
   MenuItem,
   CircularProgress,
   Avatar,
+  Chip,
+  Collapse,
+  List,
+  ListItem,
+  ListItemIcon,
+  ListItemText,
+  Link,
 } from '@mui/material';
 import {
   Send as SendIcon,
   SmartToy as BotIcon,
   Person as PersonIcon,
+  Search as SearchIcon,
+  Storage as StorageIcon,
+  Chat as ConversationIcon,
+  OpenInNew as OpenInNewIcon,
 } from '@mui/icons-material';
 
 interface Message {
@@ -21,6 +32,16 @@ interface Message {
   content: string;
   timestamp: string;
   thinking?: string; // Optional thinking process content
+  context_sources?: Array<{
+    type: 'knowledge' | 'conversation' | 'web_search';
+    title?: string;
+    url?: string;
+    snippet?: string;
+    metadata?: any;
+    relevance?: number;
+  }>;
+  rag_used?: boolean;
+  search_used?: boolean;
 }
 
 interface Model {
@@ -34,6 +55,8 @@ interface ChatPanelProps {
   showThinkingProcess?: boolean;
   webSearchEnabled?: boolean;
   evolverEnabled?: boolean;
+  ragEnabled?: boolean;
+  settings?: any;
 }
 
 export const ChatPanel: React.FC<ChatPanelProps> = ({
@@ -42,12 +65,15 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
   showThinkingProcess = false,
   webSearchEnabled = true,
   evolverEnabled = false,
+  ragEnabled = true,
+  settings = {},
 }) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [models, setModels] = useState<Model[]>([]);
   const [selectedModel, setSelectedModel] = useState('llama3.2');
+  const [showContextSources, setShowContextSources] = useState<{ [key: number]: boolean }>({});
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Load available models
@@ -174,7 +200,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
     }
 
     try {
-      // Send to Ollama
+      // Send to Ollama with RAG and search features
       const response = await fetch('http://localhost:8000/api/models/chat', {
         method: 'POST',
         headers: {
@@ -186,22 +212,43 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
             role: msg.role,
             content: msg.content,
           })),
+          use_rag: ragEnabled,
+          auto_search: webSearchEnabled,
+          conversation_id: currentConversationId || 'default',
         }),
       });
 
       const data = await response.json();
       
       if (data.message) {
-        // Simulate thinking process for demonstration when enabled
-        const thinking = showThinkingProcess ? 
-          `Analyzing your question about "${userMessage.content.substring(0, 30)}..."${userMessage.content.length > 30 ? '...' : ''}\n\nConsidering the context and determining the best approach to provide a helpful response.` 
-          : undefined;
+        // Enhanced thinking process that considers RAG and search
+        let thinkingText = '';
+        if (showThinkingProcess) {
+          thinkingText = `Analyzing your question about "${userMessage.content.substring(0, 30)}..."${userMessage.content.length > 30 ? '...' : ''}`;
+          
+          if (data.rag_used) {
+            thinkingText += '\n\n🧠 Retrieved relevant context from knowledge base';
+          }
+          
+          if (data.search_used) {
+            thinkingText += '\n\n🔍 Searched the web for up-to-date information';
+          }
+          
+          if (data.context_sources && data.context_sources.length > 0) {
+            thinkingText += `\n\n📚 Using ${data.context_sources.length} source(s) to enhance my response`;
+          }
+          
+          thinkingText += '\n\nDetermining the best approach to provide a comprehensive and helpful response.';
+        }
 
         const assistantMessage: Message = {
           role: 'assistant',
           content: data.message.content,
           timestamp: new Date().toISOString(),
-          thinking,
+          thinking: thinkingText || undefined,
+          context_sources: data.context_sources || [],
+          rag_used: data.rag_used || false,
+          search_used: data.search_used || false,
         };
 
         setMessages(prev => [...prev, assistantMessage]);
@@ -221,6 +268,39 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
       setMessages(prev => [...prev, errorMessage]);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const toggleContextSources = (messageIndex: number) => {
+    setShowContextSources(prev => ({
+      ...prev,
+      [messageIndex]: !prev[messageIndex]
+    }));
+  };
+
+  const getSourceIcon = (type: string) => {
+    switch (type) {
+      case 'web_search':
+        return <SearchIcon fontSize="small" />;
+      case 'knowledge':
+        return <StorageIcon fontSize="small" />;
+      case 'conversation':
+        return <ConversationIcon fontSize="small" />;
+      default:
+        return <StorageIcon fontSize="small" />;
+    }
+  };
+
+  const getSourceLabel = (type: string) => {
+    switch (type) {
+      case 'web_search':
+        return 'Web Search';
+      case 'knowledge':
+        return 'Knowledge Base';
+      case 'conversation':
+        return 'Previous Conversation';
+      default:
+        return 'Source';
     }
   };
 
@@ -328,6 +408,81 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                 >
                   {message.content}
                 </Typography>
+                
+                {/* Context Sources Display */}
+                {message.role === 'assistant' && message.context_sources && message.context_sources.length > 0 && (
+                  <Box sx={{ mt: 2 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                      {message.rag_used && (
+                        <Chip 
+                          size="small" 
+                          label="RAG Enhanced" 
+                          color="primary" 
+                          variant="outlined"
+                        />
+                      )}
+                      {message.search_used && (
+                        <Chip 
+                          size="small" 
+                          label="Web Search" 
+                          color="secondary" 
+                          variant="outlined"
+                        />
+                      )}
+                      <Chip
+                        size="small"
+                        label={`${message.context_sources.length} source${message.context_sources.length !== 1 ? 's' : ''}`}
+                        onClick={() => toggleContextSources(index)}
+                        sx={{ cursor: 'pointer' }}
+                      />
+                    </Box>
+                    
+                    <Collapse in={showContextSources[index]}>
+                      <List dense sx={{ bgcolor: 'rgba(255, 255, 255, 0.05)', borderRadius: 1, mt: 1 }}>
+                        {message.context_sources.map((source, sourceIndex) => (
+                          <ListItem key={sourceIndex} sx={{ py: 0.5 }}>
+                            <ListItemIcon sx={{ minWidth: 30 }}>
+                              {getSourceIcon(source.type)}
+                            </ListItemIcon>
+                            <ListItemText
+                              primary={
+                                source.url ? (
+                                  <Link
+                                    href={source.url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    sx={{ 
+                                      color: 'primary.light',
+                                      textDecoration: 'none',
+                                      '&:hover': { textDecoration: 'underline' },
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      gap: 0.5
+                                    }}
+                                  >
+                                    {source.title || getSourceLabel(source.type)}
+                                    <OpenInNewIcon fontSize="small" />
+                                  </Link>
+                                ) : (
+                                  source.title || getSourceLabel(source.type)
+                                )
+                              }
+                              secondary={source.snippet}
+                              primaryTypographyProps={{ 
+                                fontSize: '0.875rem',
+                                fontWeight: 500
+                              }}
+                              secondaryTypographyProps={{ 
+                                fontSize: '0.75rem',
+                                sx: { color: 'text.secondary' }
+                              }}
+                            />
+                          </ListItem>
+                        ))}
+                      </List>
+                    </Collapse>
+                  </Box>
+                )}
               </Paper>
             </Box>
           ))
