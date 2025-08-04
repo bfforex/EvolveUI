@@ -3,6 +3,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from api.models import router as models_router
 from api.conversations import router as conversations_router
 from api.search import router as search_router
+from api.files import router as files_router
+from api.code_execution import router as code_router
 from utils.system_status import get_system_status
 
 app = FastAPI(
@@ -26,6 +28,8 @@ app.add_middleware(
 app.include_router(models_router, prefix="/api/models", tags=["models"])
 app.include_router(conversations_router, prefix="/api/conversations", tags=["conversations"])
 app.include_router(search_router, prefix="/api/search", tags=["search"])
+app.include_router(files_router, prefix="/api/files", tags=["files"])
+app.include_router(code_router, prefix="/api/code", tags=["code-execution"])
 
 @app.get("/", tags=["system"])
 def read_root():

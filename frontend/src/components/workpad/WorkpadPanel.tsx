@@ -8,6 +8,12 @@ import {
   Tab,
   TextField,
   Button,
+  Alert,
+  CircularProgress,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
 } from '@mui/material';
 import {
   Close as CloseIcon,
@@ -15,7 +21,9 @@ import {
   Description as DocumentIcon,
   Download as DownloadIcon,
   Upload as UploadIcon,
+  PlayArrow as RunIcon,
 } from '@mui/icons-material';
+import axios from 'axios';
 
 interface WorkpadPanelProps {
   onClose: () => void;
@@ -51,9 +59,67 @@ export const WorkpadPanel: React.FC<WorkpadPanelProps> = ({ onClose }) => {
   const [tabValue, setTabValue] = useState(0);
   const [codeContent, setCodeContent] = useState('// Your code here\nconsole.log("Hello, EvolveUI!");');
   const [documentContent, setDocumentContent] = useState('# Document Title\n\nYour document content here...');
+  const [selectedLanguage, setSelectedLanguage] = useState('python');
+  const [isExecuting, setIsExecuting] = useState(false);
+  const [executionResult, setExecutionResult] = useState<any>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const executeCode = async () => {
+    if (!codeContent.trim()) {
+      setError('No code to execute');
+      return;
+    }
+
+    setIsExecuting(true);
+    setError(null);
+    setExecutionResult(null);
+
+    try {
+      const response = await axios.post('http://localhost:8000/api/code/execute', {
+        code: codeContent,
+        language: selectedLanguage,
+      });
+
+      setExecutionResult(response.data.execution_result);
+    } catch (error: any) {
+      console.error('Code execution error:', error);
+      setError(error.response?.data?.detail || error.message);
+    } finally {
+      setIsExecuting(false);
+    }
+  };
+
+  const validateCode = async () => {
+    if (!codeContent.trim()) return;
+
+    try {
+      const response = await axios.post('http://localhost:8000/api/code/validate', {
+        code: codeContent,
+        language: selectedLanguage,
+      });
+
+      if (!response.data.validation.valid) {
+        setError(`Validation errors: ${response.data.validation.errors.join(', ')}`);
+      } else {
+        setError(null);
+      }
+    } catch (error: any) {
+      console.error('Code validation error:', error);
+    }
+  };
+
+  React.useEffect(() => {
+    if (tabValue === 0 && codeContent.trim()) {
+      // Debounce validation
+      const timeoutId = setTimeout(validateCode, 1000);
+      return () => clearTimeout(timeoutId);
+    }
+  }, [codeContent, selectedLanguage]);
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
+    setExecutionResult(null);
+    setError(null);
   };
 
   const downloadContent = () => {
@@ -159,9 +225,30 @@ export const WorkpadPanel: React.FC<WorkpadPanelProps> = ({ onClose }) => {
       <Box sx={{ flex: 1, overflow: 'hidden' }}>
         <TabPanel value={tabValue} index={0}>
           <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-            <Typography variant="subtitle2" sx={{ mb: 1, color: 'text.secondary' }}>
-              Code Editor
-            </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
+              <Typography variant="subtitle2" color="text.secondary">
+                Code Editor
+              </Typography>
+              <FormControl size="small" sx={{ minWidth: 120 }}>
+                <InputLabel>Language</InputLabel>
+                <Select
+                  value={selectedLanguage}
+                  onChange={(e) => setSelectedLanguage(e.target.value)}
+                  label="Language"
+                >
+                  <MenuItem value="python">Python</MenuItem>
+                  <MenuItem value="javascript">JavaScript</MenuItem>
+                  <MenuItem value="bash">Bash</MenuItem>
+                </Select>
+              </FormControl>
+            </Box>
+            
+            {error && (
+              <Alert severity="error" sx={{ mb: 1 }}>
+                {error}
+              </Alert>
+            )}
+            
             <TextField
               fullWidth
               multiline
@@ -183,25 +270,90 @@ export const WorkpadPanel: React.FC<WorkpadPanelProps> = ({ onClose }) => {
               }}
               placeholder="Write your code here..."
             />
+            
             <Box sx={{ mt: 2, display: 'flex', gap: 1 }}>
+              <Button
+                variant="contained"
+                size="small"
+                onClick={executeCode}
+                disabled={isExecuting || !codeContent.trim()}
+                startIcon={isExecuting ? <CircularProgress size={16} /> : <RunIcon />}
+              >
+                {isExecuting ? 'Running...' : 'Run Code'}
+              </Button>
               <Button
                 variant="outlined"
                 size="small"
                 onClick={() => {
-                  // TODO: Implement code execution
-                  console.log('Code execution not yet implemented');
+                  setCodeContent('');
+                  setExecutionResult(null);
+                  setError(null);
                 }}
-              >
-                Run Code
-              </Button>
-              <Button
-                variant="outlined"
-                size="small"
-                onClick={() => setCodeContent('')}
               >
                 Clear
               </Button>
             </Box>
+            
+            {/* Execution Results */}
+            {executionResult && (
+              <Box sx={{ mt: 2 }}>
+                <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                  Execution Result
+                </Typography>
+                <Paper 
+                  variant="outlined" 
+                  sx={{ 
+                    p: 2, 
+                    bgcolor: executionResult.success ? 'rgba(76, 175, 80, 0.1)' : 'rgba(244, 67, 54, 0.1)',
+                    maxHeight: 200,
+                    overflow: 'auto'
+                  }}
+                >
+                  {executionResult.output && (
+                    <Box sx={{ mb: 1 }}>
+                      <Typography variant="caption" color="text.secondary">Output:</Typography>
+                      <Typography 
+                        variant="body2" 
+                        component="pre" 
+                        sx={{ 
+                          fontFamily: 'Monaco, Consolas, "Courier New", monospace',
+                          fontSize: '0.75rem',
+                          whiteSpace: 'pre-wrap',
+                          wordWrap: 'break-word'
+                        }}
+                      >
+                        {executionResult.output}
+                      </Typography>
+                    </Box>
+                  )}
+                  
+                  {executionResult.stderr && (
+                    <Box sx={{ mb: 1 }}>
+                      <Typography variant="caption" color="error">Errors:</Typography>
+                      <Typography 
+                        variant="body2" 
+                        component="pre" 
+                        color="error"
+                        sx={{ 
+                          fontFamily: 'Monaco, Consolas, "Courier New", monospace',
+                          fontSize: '0.75rem',
+                          whiteSpace: 'pre-wrap',
+                          wordWrap: 'break-word'
+                        }}
+                      >
+                        {executionResult.stderr}
+                      </Typography>
+                    </Box>
+                  )}
+                  
+                  <Typography variant="caption" color="text.secondary">
+                    Execution time: {executionResult.execution_time}s | 
+                    Return code: {executionResult.return_code} |
+                    Status: {executionResult.success ? 'Success' : 'Failed'}
+                  </Typography>
+                </Paper>
+              </Box>
+            )}
           </Box>
         </TabPanel>
 

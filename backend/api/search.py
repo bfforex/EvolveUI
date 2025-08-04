@@ -1,7 +1,16 @@
 from fastapi import APIRouter, HTTPException
 import requests
-from typing import Optional
+from typing import Optional, List, Dict, Any
 from services.chromadb_service import ChromaDBService
+import logging
+
+# Try to import duckduckgo search, fallback if not available
+try:
+    from duckduckgo_search import DDGS
+    DDGS_AVAILABLE = True
+except ImportError:
+    DDGS_AVAILABLE = False
+    logging.warning("DuckDuckGo search not available. Install duckduckgo-search for web search functionality.")
 
 router = APIRouter()
 
@@ -9,23 +18,66 @@ router = APIRouter()
 chromadb_service = ChromaDBService()
 
 @router.get("/web")
-async def search_web(q: str, limit: Optional[int] = 5):
-    """Search the web using DuckDuckGo"""
+async def search_web(q: str, limit: Optional[int] = 5, engine: Optional[str] = "duckduckgo"):
+    """Search the web using specified search engine"""
     try:
-        # For now, return a mock response since we don't have DuckDuckGo API
-        # In a real implementation, you would integrate with a search API
-        return {
-            "query": q,
-            "results": [
-                {
-                    "title": f"Search result for: {q}",
-                    "url": "https://example.com",
-                    "snippet": f"This is a mock search result for the query: {q}. In a real implementation, this would be replaced with actual web search results."
-                }
-            ]
-        }
+        if engine == "duckduckgo" and DDGS_AVAILABLE:
+            return await _search_duckduckgo(q, limit)
+        else:
+            # Fallback to mock response
+            return {
+                "query": q,
+                "results": [
+                    {
+                        "title": f"Search result for: {q}",
+                        "url": "https://example.com",
+                        "snippet": f"Mock search result for: {q}. Real web search requires proper search engine integration.",
+                        "source": "mock"
+                    }
+                ],
+                "engine": "mock",
+                "available_engines": ["duckduckgo"] if DDGS_AVAILABLE else []
+            }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Search error: {str(e)}")
+
+async def _search_duckduckgo(query: str, limit: int) -> Dict[str, Any]:
+    """Search using DuckDuckGo"""
+    try:
+        with DDGS() as ddgs:
+            results = []
+            search_results = ddgs.text(query, max_results=limit)
+            
+            for result in search_results:
+                results.append({
+                    "title": result.get("title", ""),
+                    "url": result.get("href", ""),
+                    "snippet": result.get("body", ""),
+                    "source": "duckduckgo"
+                })
+            
+            return {
+                "query": query,
+                "results": results,
+                "engine": "duckduckgo",
+                "total_results": len(results)
+            }
+    except Exception as e:
+        logging.error(f"DuckDuckGo search error: {e}")
+        # Fallback to mock
+        return {
+            "query": query,
+            "results": [
+                {
+                    "title": f"Search failed for: {query}",
+                    "url": "",
+                    "snippet": f"DuckDuckGo search encountered an error: {str(e)}",
+                    "source": "error"
+                }
+            ],
+            "engine": "duckduckgo",
+            "error": str(e)
+        }
 
 @router.get("/knowledge")
 async def search_knowledge(q: str, limit: Optional[int] = 5):

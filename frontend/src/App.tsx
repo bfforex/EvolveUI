@@ -8,6 +8,7 @@ import { WorkpadPanel } from './components/workpad/WorkpadPanel';
 import { TopBar } from './components/layout/TopBar';
 import { SettingsPanel } from './components/settings/SettingsPanel';
 import { KnowledgePanel } from './components/settings/KnowledgePanel';
+import { FileUploadPanel } from './components/files/FileUploadPanel';
 import './App.css';
 
 // Create dark theme matching the color scheme requirements
@@ -36,6 +37,7 @@ function App() {
   const [isWorkpadOpen, setIsWorkpadOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isKnowledgeOpen, setIsKnowledgeOpen] = useState(false);
+  const [isFileUploadOpen, setIsFileUploadOpen] = useState(false);
   const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
   
   // Load settings from localStorage
@@ -52,6 +54,14 @@ function App() {
       showThinkingProcess: false,
       webSearchEnabled: true,
       evolverEnabled: false,
+      ragEnabled: true,
+      fileProcessingEnabled: true,
+      codeExecutionEnabled: true,
+      persistentMemory: true,
+      contextLimit: 3,
+      autoAddConversations: true,
+      autoWebSearch: true,
+      autoAddFilesToKnowledge: true,
     };
   });
 
@@ -106,6 +116,9 @@ function App() {
             showThinkingProcess={settings.showThinkingProcess}
             webSearchEnabled={settings.webSearchEnabled}
             evolverEnabled={settings.evolverEnabled}
+            ragEnabled={settings.ragEnabled}
+            contextLimit={settings.contextLimit}
+            onOpenFileUpload={() => setIsFileUploadOpen(true)}
           />
           
           {/* Right Panel - Workpad */}
@@ -124,6 +137,16 @@ function App() {
         <KnowledgePanel 
           open={isKnowledgeOpen}
           onClose={() => setIsKnowledgeOpen(false)}
+        />
+
+        {/* File Upload Panel */}
+        <FileUploadPanel 
+          open={isFileUploadOpen}
+          onClose={() => setIsFileUploadOpen(false)}
+          onFileProcessed={(result) => {
+            console.log('File processed:', result);
+            // Optionally trigger refresh of knowledge base or other actions
+          }}
         />
       </Box>
     </ThemeProvider>

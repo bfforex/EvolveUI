@@ -14,6 +14,8 @@ import {
   Send as SendIcon,
   SmartToy as BotIcon,
   Person as PersonIcon,
+  CloudUpload as UploadIcon,
+  Memory as MemoryIcon,
 } from '@mui/icons-material';
 
 interface Message {
@@ -34,6 +36,9 @@ interface ChatPanelProps {
   showThinkingProcess?: boolean;
   webSearchEnabled?: boolean;
   evolverEnabled?: boolean;
+  ragEnabled?: boolean;
+  contextLimit?: number;
+  onOpenFileUpload?: () => void;
 }
 
 export const ChatPanel: React.FC<ChatPanelProps> = ({
@@ -42,6 +47,9 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
   showThinkingProcess = false,
   webSearchEnabled = true,
   evolverEnabled = false,
+  ragEnabled = true,
+  contextLimit = 3,
+  onOpenFileUpload,
 }) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
@@ -353,6 +361,50 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
           borderRadius: 2,
         }}
       >
+        {/* Phase 2 Features Bar */}
+        {(ragEnabled || onOpenFileUpload) && (
+          <Box sx={{ 
+            display: 'flex', 
+            gap: 1, 
+            mb: 1, 
+            alignItems: 'center',
+            justifyContent: 'flex-start'
+          }}>
+            {ragEnabled && (
+              <Box sx={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: 0.5,
+                bgcolor: 'rgba(25, 118, 210, 0.1)',
+                borderRadius: 1,
+                px: 1,
+                py: 0.5
+              }}>
+                <MemoryIcon sx={{ fontSize: 14, color: 'primary.main' }} />
+                <Typography variant="caption" color="primary.main">
+                  RAG Active
+                </Typography>
+              </Box>
+            )}
+            {onOpenFileUpload && (
+              <IconButton
+                size="small"
+                onClick={onOpenFileUpload}
+                sx={{
+                  bgcolor: 'rgba(25, 118, 210, 0.1)',
+                  color: 'primary.main',
+                  '&:hover': {
+                    bgcolor: 'rgba(25, 118, 210, 0.2)',
+                  },
+                }}
+                title="Upload Files"
+              >
+                <UploadIcon sx={{ fontSize: 16 }} />
+              </IconButton>
+            )}
+          </Box>
+        )}
+        
         <Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-end' }}>
           <TextField
             fullWidth

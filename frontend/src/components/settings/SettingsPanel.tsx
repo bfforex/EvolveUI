@@ -21,6 +21,8 @@ import {
   Palette as PaletteIcon,
   Code as CodeIcon,
   Psychology as PsychologyIcon,
+  Upload as UploadIcon,
+  PlayArrow as ExecuteIcon,
 } from '@mui/icons-material';
 
 interface SettingsPanelProps {
@@ -75,15 +77,30 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ open, onClose }) =
       showThinkingProcess: false,
       
       // Memory/RAG Settings
-      persistentMemory: false,
-      ragEnabled: false,
+      persistentMemory: true,
+      ragEnabled: true,
       chromaDBUrl: 'http://localhost:8001',
       maxMemoryItems: 1000,
+      contextLimit: 3,
+      autoAddConversations: true,
       
       // Web Search Settings
       webSearchEnabled: true, // Smart web search is always-on but activates when necessary
       searchEngine: 'duckduckgo',
       maxSearchResults: 5,
+      autoWebSearch: true,
+      
+      // File Processing Settings
+      fileProcessingEnabled: true,
+      autoAddFilesToKnowledge: true,
+      supportedFileTypes: ['.txt', '.md', '.pdf', '.docx', '.py', '.js', '.json', '.csv'],
+      maxFileSize: 10, // MB
+      
+      // Code Execution Settings
+      codeExecutionEnabled: true,
+      allowedLanguages: ['python', 'javascript'],
+      executionTimeout: 30, // seconds
+      safeMode: true,
       
       // Evolver Settings
       evolverEnabled: false,
@@ -184,6 +201,18 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ open, onClose }) =
                 sx={{ justifyContent: 'flex-start' }}
               />
               <Tab 
+                icon={<UploadIcon />} 
+                label="File Processing" 
+                iconPosition="start"
+                sx={{ justifyContent: 'flex-start' }}
+              />
+              <Tab 
+                icon={<ExecuteIcon />} 
+                label="Code Execution" 
+                iconPosition="start"
+                sx={{ justifyContent: 'flex-start' }}
+              />
+              <Tab 
                 icon={<PsychologyIcon />} 
                 label="Evolver" 
                 iconPosition="start"
@@ -279,6 +308,17 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ open, onClose }) =
                   label="Enable RAG (Retrieval Augmented Generation)"
                 />
                 
+                <FormControlLabel
+                  control={
+                    <Switch 
+                      checked={settings.autoAddConversations}
+                      onChange={(e) => handleSettingChange('autoAddConversations', e.target.checked)}
+                      disabled={!settings.ragEnabled}
+                    />
+                  }
+                  label="Auto-add conversations to knowledge base"
+                />
+                
                 <TextField
                   label="ChromaDB URL"
                   value={settings.chromaDBUrl}
@@ -286,6 +326,17 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ open, onClose }) =
                   fullWidth
                   size="small"
                   disabled={!settings.ragEnabled}
+                />
+                
+                <TextField
+                  label="Context Limit (documents per query)"
+                  type="number"
+                  value={settings.contextLimit}
+                  onChange={(e) => handleSettingChange('contextLimit', parseInt(e.target.value))}
+                  fullWidth
+                  size="small"
+                  disabled={!settings.ragEnabled}
+                  inputProps={{ min: 1, max: 10 }}
                 />
                 
                 <TextField
@@ -320,6 +371,17 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ open, onClose }) =
                   label="Enable Smart Web Search"
                 />
                 
+                <FormControlLabel
+                  control={
+                    <Switch 
+                      checked={settings.autoWebSearch}
+                      onChange={(e) => handleSettingChange('autoWebSearch', e.target.checked)}
+                      disabled={!settings.webSearchEnabled}
+                    />
+                  }
+                  label="Auto-trigger web search when needed"
+                />
+                
                 <TextField
                   label="Search Engine"
                   select
@@ -345,12 +407,113 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ open, onClose }) =
                   fullWidth
                   size="small"
                   disabled={!settings.webSearchEnabled}
+                  inputProps={{ min: 1, max: 10 }}
                 />
               </Box>
             </TabPanel>
 
-            {/* Evolver Settings */}
+            {/* File Processing Settings */}
             <TabPanel value={tabValue} index={3}>
+              <Typography variant="h6" gutterBottom>
+                File Processing
+              </Typography>
+              <Typography variant="body2" color="text.secondary" gutterBottom sx={{ mb: 2 }}>
+                Configure file upload and processing capabilities including PDF, DOCX, and text files.
+              </Typography>
+              
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <FormControlLabel
+                  control={
+                    <Switch 
+                      checked={settings.fileProcessingEnabled}
+                      onChange={(e) => handleSettingChange('fileProcessingEnabled', e.target.checked)}
+                    />
+                  }
+                  label="Enable File Processing"
+                />
+                
+                <FormControlLabel
+                  control={
+                    <Switch 
+                      checked={settings.autoAddFilesToKnowledge}
+                      onChange={(e) => handleSettingChange('autoAddFilesToKnowledge', e.target.checked)}
+                      disabled={!settings.fileProcessingEnabled || !settings.ragEnabled}
+                    />
+                  }
+                  label="Auto-add uploaded files to knowledge base"
+                />
+                
+                <TextField
+                  label="Max File Size (MB)"
+                  type="number"
+                  value={settings.maxFileSize}
+                  onChange={(e) => handleSettingChange('maxFileSize', parseInt(e.target.value))}
+                  fullWidth
+                  size="small"
+                  disabled={!settings.fileProcessingEnabled}
+                  inputProps={{ min: 1, max: 100 }}
+                />
+                
+                <Typography variant="body2" color="text.secondary">
+                  Supported file types: PDF, DOCX, TXT, MD, PY, JS, JSON, CSV
+                </Typography>
+              </Box>
+            </TabPanel>
+
+            {/* Code Execution Settings */}
+            <TabPanel value={tabValue} index={4}>
+              <Typography variant="h6" gutterBottom>
+                Code Execution
+              </Typography>
+              <Typography variant="body2" color="text.secondary" gutterBottom sx={{ mb: 2 }}>
+                Enable safe code execution environment for Python, JavaScript, and other languages.
+              </Typography>
+              
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <FormControlLabel
+                  control={
+                    <Switch 
+                      checked={settings.codeExecutionEnabled}
+                      onChange={(e) => handleSettingChange('codeExecutionEnabled', e.target.checked)}
+                    />
+                  }
+                  label="Enable Code Execution"
+                />
+                
+                <FormControlLabel
+                  control={
+                    <Switch 
+                      checked={settings.safeMode}
+                      onChange={(e) => handleSettingChange('safeMode', e.target.checked)}
+                      disabled={!settings.codeExecutionEnabled}
+                    />
+                  }
+                  label="Safe Mode (blocks dangerous operations)"
+                />
+                
+                <TextField
+                  label="Execution Timeout (seconds)"
+                  type="number"
+                  value={settings.executionTimeout}
+                  onChange={(e) => handleSettingChange('executionTimeout', parseInt(e.target.value))}
+                  fullWidth
+                  size="small"
+                  disabled={!settings.codeExecutionEnabled}
+                  inputProps={{ min: 5, max: 120 }}
+                />
+                
+                <Typography variant="body2" color="text.secondary">
+                  Supported languages: Python, JavaScript, Bash (limited)
+                </Typography>
+                
+                <Typography variant="caption" color="warning.main">
+                  ⚠️ Code execution runs in a sandboxed environment but use caution with untrusted code.
+                </Typography>
+              </Box>
+            </TabPanel>
+
+            {/* Evolver Settings */}
+            <TabPanel value={tabValue} index={5}>
               <Typography variant="h6" gutterBottom>
                 Evolver System
               </Typography>
@@ -398,7 +561,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ open, onClose }) =
             </TabPanel>
 
             {/* Model Settings */}
-            <TabPanel value={tabValue} index={4}>
+            <TabPanel value={tabValue} index={6}>
               <Typography variant="h6" gutterBottom>
                 Model Settings
               </Typography>
