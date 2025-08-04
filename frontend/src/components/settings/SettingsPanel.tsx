@@ -10,7 +10,6 @@ import {
   Switch,
   FormControlLabel,
   TextField,
-  Divider,
   Tabs,
   Tab,
   Paper,
