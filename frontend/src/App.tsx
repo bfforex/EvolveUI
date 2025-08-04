@@ -21,7 +21,7 @@ const darkTheme = createTheme({
       main: '#ffd700', // Gold accent
     },
     background: {
-      default: '#0a1929', // Deep dark blue
+      default: '#0D1117', // GitHub-style dark background
       paper: '#1a2332', // Dark blue
     },
     text: {
@@ -37,6 +37,40 @@ function App() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isKnowledgeOpen, setIsKnowledgeOpen] = useState(false);
   const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
+  
+  // Load settings from localStorage
+  const [settings, setSettings] = useState(() => {
+    const saved = localStorage.getItem('evolveui-settings');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (error) {
+        console.error('Failed to parse saved settings:', error);
+      }
+    }
+    return {
+      showThinkingProcess: false,
+      webSearchEnabled: true,
+      evolverEnabled: false,
+    };
+  });
+
+  // Listen for settings changes
+  React.useEffect(() => {
+    const handleStorageChange = () => {
+      const saved = localStorage.getItem('evolveui-settings');
+      if (saved) {
+        try {
+          setSettings(JSON.parse(saved));
+        } catch (error) {
+          console.error('Failed to parse saved settings:', error);
+        }
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
 
   return (
     <ThemeProvider theme={darkTheme}>
@@ -69,6 +103,9 @@ function App() {
           <ChatPanel 
             conversationId={selectedConversationId}
             onNewConversation={(id) => setSelectedConversationId(id)}
+            showThinkingProcess={settings.showThinkingProcess}
+            webSearchEnabled={settings.webSearchEnabled}
+            evolverEnabled={settings.evolverEnabled}
           />
           
           {/* Right Panel - Workpad */}

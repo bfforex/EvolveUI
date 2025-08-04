@@ -49,18 +49,38 @@ export const TopBar: React.FC<TopBarProps> = ({
           <MenuIcon />
         </IconButton>
 
-        {/* Center - Title */}
-        <Typography 
-          variant="h6" 
-          component="div" 
+        {/* Center - Logo */}
+        <Box 
           sx={{ 
             flexGrow: 1,
-            fontWeight: 600,
-            color: 'primary.main'
+            display: 'flex',
+            alignItems: 'center'
           }}
         >
-          EvolveUI
-        </Typography>
+          <Box
+            sx={{
+              width: 40,
+              height: 40,
+              borderRadius: '8px',
+              background: 'linear-gradient(135deg, #1976d2 0%, #42a5f5 100%)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              marginRight: 2,
+            }}
+          >
+            <Typography
+              variant="h4"
+              sx={{
+                color: 'white',
+                fontWeight: 700,
+                fontFamily: 'monospace',
+              }}
+            >
+              E
+            </Typography>
+          </Box>
+        </Box>
 
         {/* Right side - Actions */}
         <Box sx={{ display: 'flex', gap: 1 }}>
