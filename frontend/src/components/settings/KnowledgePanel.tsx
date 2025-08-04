@@ -11,7 +11,6 @@ import {
   List,
   ListItem,
   ListItemText,
-  IconButton,
   Chip,
   Paper,
   Alert,
@@ -20,7 +19,6 @@ import {
   Add as AddIcon,
   Search as SearchIcon,
   Storage as StorageIcon,
-  Delete as DeleteIcon,
 } from '@mui/icons-material';
 
 interface KnowledgePanelProps {

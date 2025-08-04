@@ -2,7 +2,6 @@ import React from 'react';
 import {
   AppBar,
   Toolbar,
-  Typography,
   IconButton,
   Box,
 } from '@mui/material';
@@ -49,18 +48,55 @@ export const TopBar: React.FC<TopBarProps> = ({
           <MenuIcon />
         </IconButton>
 
-        {/* Center - Title */}
-        <Typography 
-          variant="h6" 
-          component="div" 
+        {/* Center - Logo */}
+        <Box 
           sx={{ 
             flexGrow: 1,
-            fontWeight: 600,
-            color: 'primary.main'
+            display: 'flex',
+            alignItems: 'center'
           }}
         >
-          EvolveUI
-        </Typography>
+          <Box
+            sx={{
+              width: 40,
+              height: 40,
+              borderRadius: '8px',
+              background: '#0D1117',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              marginRight: 2,
+              gap: '3px',
+            }}
+          >
+            {/* Three horizontal bars */}
+            <Box
+              sx={{
+                width: '24px',
+                height: '4px',
+                borderRadius: '2px',
+                background: 'linear-gradient(90deg, #1976d2 0%, #42a5f5 100%)',
+              }}
+            />
+            <Box
+              sx={{
+                width: '24px',
+                height: '4px',
+                borderRadius: '2px',
+                background: 'linear-gradient(90deg, #1976d2 0%, #42a5f5 100%)',
+              }}
+            />
+            <Box
+              sx={{
+                width: '24px',
+                height: '4px',
+                borderRadius: '2px',
+                background: 'linear-gradient(90deg, #1976d2 0%, #42a5f5 100%)',
+              }}
+            />
+          </Box>
+        </Box>
 
         {/* Right side - Actions */}
         <Box sx={{ display: 'flex', gap: 1 }}>

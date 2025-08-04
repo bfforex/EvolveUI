@@ -7,8 +7,6 @@ import {
   IconButton,
   Select,
   MenuItem,
-  FormControl,
-  InputLabel,
   CircularProgress,
   Avatar,
 } from '@mui/material';
@@ -22,6 +20,7 @@ interface Message {
   role: 'user' | 'assistant';
   content: string;
   timestamp: string;
+  thinking?: string; // Optional thinking process content
 }
 
 interface Model {
@@ -32,11 +31,17 @@ interface Model {
 interface ChatPanelProps {
   conversationId: string | null;
   onNewConversation: (id: string) => void;
+  showThinkingProcess?: boolean;
+  webSearchEnabled?: boolean;
+  evolverEnabled?: boolean;
 }
 
 export const ChatPanel: React.FC<ChatPanelProps> = ({
   conversationId,
   onNewConversation,
+  showThinkingProcess = false,
+  webSearchEnabled = true,
+  evolverEnabled = false,
 }) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
@@ -187,10 +192,16 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
       const data = await response.json();
       
       if (data.message) {
+        // Simulate thinking process for demonstration when enabled
+        const thinking = showThinkingProcess ? 
+          `Analyzing your question about "${userMessage.content.substring(0, 30)}..."${userMessage.content.length > 30 ? '...' : ''}\n\nConsidering the context and determining the best approach to provide a helpful response.` 
+          : undefined;
+
         const assistantMessage: Message = {
           role: 'assistant',
           content: data.message.content,
           timestamp: new Date().toISOString(),
+          thinking,
         };
 
         setMessages(prev => [...prev, assistantMessage]);
@@ -290,6 +301,24 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                   maxWidth: '80%',
                 }}
               >
+                {/* Show thinking process if enabled and available */}
+                {showThinkingProcess && message.thinking && message.role === 'assistant' && (
+                  <Box sx={{ mb: 2, p: 1, bgcolor: 'rgba(255, 255, 255, 0.05)', borderRadius: 1 }}>
+                    <Typography
+                      variant="caption"
+                      sx={{
+                        color: 'text.secondary',
+                        fontStyle: 'italic',
+                        fontSize: '0.75rem',
+                        whiteSpace: 'pre-wrap',
+                        wordBreak: 'break-word',
+                      }}
+                    >
+                      💭 {message.thinking}
+                    </Typography>
+                  </Box>
+                )}
+                
                 <Typography
                   variant="body1"
                   sx={{
@@ -317,12 +346,10 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
       </Box>
 
       {/* Input Area */}
-      <Paper
-        elevation={2}
+      <Box
         sx={{
           p: 2,
           m: 2,
-          bgcolor: 'background.paper',
           borderRadius: 2,
         }}
       >
@@ -340,42 +367,61 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
             sx={{
               '& .MuiOutlinedInput-root': {
                 borderRadius: 2,
+                bgcolor: 'transparent',
+                '& fieldset': {
+                  borderColor: 'rgba(255, 255, 255, 0.23)',
+                },
+                '&:hover fieldset': {
+                  borderColor: 'rgba(255, 255, 255, 0.5)',
+                },
+                '&.Mui-focused fieldset': {
+                  borderColor: 'primary.main',
+                },
               },
             }}
           />
-          <FormControl size="small" sx={{ minWidth: 120 }}>
-            <InputLabel>Model</InputLabel>
-            <Select
-              value={selectedModel}
-              onChange={(e) => setSelectedModel(e.target.value)}
-              label="Model"
-            >
-              {models.map((model) => (
-                <MenuItem key={model.name} value={model.name}>
-                  {model.name}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-          <IconButton
-            onClick={sendMessage}
-            disabled={!inputValue.trim() || isLoading}
-            color="primary"
+          <Select
+            value={selectedModel}
+            onChange={(e) => setSelectedModel(e.target.value)}
+            variant="outlined"
+            size="small"
+            displayEmpty
             sx={{
-              bgcolor: 'primary.main',
-              color: 'white',
-              '&:hover': {
-                bgcolor: 'primary.dark',
+              minWidth: 120,
+              '& .MuiOutlinedInput-notchedOutline': {
+                border: 'none',
               },
-              '&:disabled': {
-                bgcolor: 'action.disabled',
+              '& .MuiSelect-select': {
+                color: 'text.secondary',
+                fontSize: '0.875rem',
               },
             }}
           >
-            <SendIcon />
+            {models.map((model) => (
+              <MenuItem key={model.name} value={model.name}>
+                {model.name}
+              </MenuItem>
+            ))}
+          </Select>
+          <IconButton
+            onClick={sendMessage}
+            disabled={!inputValue.trim() || isLoading}
+            sx={{
+              width: 32,
+              height: 32,
+              color: 'primary.main',
+              '&:hover': {
+                bgcolor: 'rgba(25, 118, 210, 0.1)',
+              },
+              '&:disabled': {
+                color: 'action.disabled',
+              },
+            }}
+          >
+            <SendIcon sx={{ fontSize: 18 }} />
           </IconButton>
         </Box>
-      </Paper>
+      </Box>
     </Box>
   );
 };

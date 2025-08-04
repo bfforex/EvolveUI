@@ -10,7 +10,6 @@ import {
   Switch,
   FormControlLabel,
   TextField,
-  Divider,
   Tabs,
   Tab,
   Paper,
@@ -21,6 +20,7 @@ import {
   Search as SearchIcon,
   Palette as PaletteIcon,
   Code as CodeIcon,
+  Psychology as PsychologyIcon,
 } from '@mui/icons-material';
 
 interface SettingsPanelProps {
@@ -56,40 +56,61 @@ function TabPanel(props: TabPanelProps) {
 
 export const SettingsPanel: React.FC<SettingsPanelProps> = ({ open, onClose }) => {
   const [tabValue, setTabValue] = useState(0);
-  const [settings, setSettings] = useState({
-    // UI Settings
-    darkMode: true,
-    compactMode: false,
-    showTimestamps: true,
-    
-    // Memory/RAG Settings
-    persistentMemory: false,
-    ragEnabled: false,
-    chromaDBUrl: 'http://localhost:8001',
-    maxMemoryItems: 1000,
-    
-    // Web Search Settings
-    webSearchEnabled: false,
-    searchEngine: 'duckduckgo',
-    maxSearchResults: 5,
-    
-    // Model Settings
-    defaultModel: 'llama3.2',
-    maxTokens: 2048,
-    temperature: 0.7,
-    streamResponses: true,
-  });
+  
+  // Load settings from localStorage
+  const loadSettings = () => {
+    const saved = localStorage.getItem('evolveui-settings');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (error) {
+        console.error('Failed to parse saved settings:', error);
+      }
+    }
+    return {
+      // UI Settings
+      darkMode: true,
+      compactMode: false,
+      showTimestamps: true,
+      showThinkingProcess: false,
+      
+      // Memory/RAG Settings
+      persistentMemory: false,
+      ragEnabled: false,
+      chromaDBUrl: 'http://localhost:8001',
+      maxMemoryItems: 1000,
+      
+      // Web Search Settings
+      webSearchEnabled: true, // Smart web search is always-on but activates when necessary
+      searchEngine: 'duckduckgo',
+      maxSearchResults: 5,
+      
+      // Evolver Settings
+      evolverEnabled: false,
+      learningEnabled: false,
+      scheduledSearchEnabled: false,
+      
+      // Model Settings
+      defaultModel: 'llama3.2',
+      maxTokens: 2048,
+      temperature: 0.7,
+      streamResponses: true,
+    };
+  };
+  
+  const [settings, setSettings] = useState(loadSettings());
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
   };
 
   const handleSettingChange = (setting: string, value: any) => {
-    setSettings(prev => ({ ...prev, [setting]: value }));
+    setSettings((prev: any) => ({ ...prev, [setting]: value }));
   };
 
   const handleSave = () => {
-    // TODO: Save settings to backend/localStorage
+    // Save settings to localStorage
+    localStorage.setItem('evolveui-settings', JSON.stringify(settings));
     console.log('Saving settings:', settings);
     onClose();
   };
@@ -163,6 +184,12 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ open, onClose }) =
                 sx={{ justifyContent: 'flex-start' }}
               />
               <Tab 
+                icon={<PsychologyIcon />} 
+                label="Evolver" 
+                iconPosition="start"
+                sx={{ justifyContent: 'flex-start' }}
+              />
+              <Tab 
                 icon={<CodeIcon />} 
                 label="Models" 
                 iconPosition="start"
@@ -209,6 +236,19 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ open, onClose }) =
                   }
                   label="Show Message Timestamps"
                 />
+                
+                <FormControlLabel
+                  control={
+                    <Switch 
+                      checked={settings.showThinkingProcess}
+                      onChange={(e) => handleSettingChange('showThinkingProcess', e.target.checked)}
+                    />
+                  }
+                  label="Show AI Thinking Process"
+                />
+                <Typography variant="caption" color="text.secondary" sx={{ ml: 4, mt: -1 }}>
+                  Display AI thought processes in gray text similar to Microsoft Copilot
+                </Typography>
               </Box>
             </TabPanel>
 
@@ -263,7 +303,10 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ open, onClose }) =
             {/* Web Search Settings */}
             <TabPanel value={tabValue} index={2}>
               <Typography variant="h6" gutterBottom>
-                Web Search Settings
+                Smart Web Search
+              </Typography>
+              <Typography variant="body2" color="text.secondary" gutterBottom sx={{ mb: 2 }}>
+                Smart Web Search is always-on but activates only when necessary to provide up-to-date information.
               </Typography>
               
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -274,7 +317,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ open, onClose }) =
                       onChange={(e) => handleSettingChange('webSearchEnabled', e.target.checked)}
                     />
                   }
-                  label="Enable Web Search"
+                  label="Enable Smart Web Search"
                 />
                 
                 <TextField
@@ -306,8 +349,56 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ open, onClose }) =
               </Box>
             </TabPanel>
 
-            {/* Model Settings */}
+            {/* Evolver Settings */}
             <TabPanel value={tabValue} index={3}>
+              <Typography variant="h6" gutterBottom>
+                Evolver System
+              </Typography>
+              <Typography variant="body2" color="text.secondary" gutterBottom sx={{ mb: 2 }}>
+                Enable model learning through user interactions and proactive knowledge growth.
+              </Typography>
+              
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <FormControlLabel
+                  control={
+                    <Switch 
+                      checked={settings.evolverEnabled}
+                      onChange={(e) => handleSettingChange('evolverEnabled', e.target.checked)}
+                    />
+                  }
+                  label="Enable Evolver System"
+                />
+                
+                <FormControlLabel
+                  control={
+                    <Switch 
+                      checked={settings.learningEnabled}
+                      onChange={(e) => handleSettingChange('learningEnabled', e.target.checked)}
+                      disabled={!settings.evolverEnabled}
+                    />
+                  }
+                  label="Enable Learning from Interactions"
+                />
+                
+                <FormControlLabel
+                  control={
+                    <Switch 
+                      checked={settings.scheduledSearchEnabled}
+                      onChange={(e) => handleSettingChange('scheduledSearchEnabled', e.target.checked)}
+                      disabled={!settings.evolverEnabled}
+                    />
+                  }
+                  label="Enable Scheduled Knowledge Searches"
+                />
+                
+                <Typography variant="caption" color="text.secondary">
+                  Advanced features coming soon: Deep Research capability and Agenic Workflow for task automation.
+                </Typography>
+              </Box>
+            </TabPanel>
+
+            {/* Model Settings */}
+            <TabPanel value={tabValue} index={4}>
               <Typography variant="h6" gutterBottom>
                 Model Settings
               </Typography>
