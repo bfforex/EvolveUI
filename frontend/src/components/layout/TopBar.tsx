@@ -2,7 +2,6 @@ import React from 'react';
 import {
   AppBar,
   Toolbar,
-  Typography,
   IconButton,
   Box,
 } from '@mui/material';
@@ -62,23 +61,40 @@ export const TopBar: React.FC<TopBarProps> = ({
               width: 40,
               height: 40,
               borderRadius: '8px',
-              background: 'linear-gradient(135deg, #1976d2 0%, #42a5f5 100%)',
+              background: '#0D1117',
               display: 'flex',
+              flexDirection: 'column',
               alignItems: 'center',
               justifyContent: 'center',
               marginRight: 2,
+              gap: '3px',
             }}
           >
-            <Typography
-              variant="h4"
+            {/* Three horizontal bars */}
+            <Box
               sx={{
-                color: 'white',
-                fontWeight: 700,
-                fontFamily: 'monospace',
+                width: '24px',
+                height: '4px',
+                borderRadius: '2px',
+                background: 'linear-gradient(90deg, #1976d2 0%, #42a5f5 100%)',
               }}
-            >
-              E
-            </Typography>
+            />
+            <Box
+              sx={{
+                width: '24px',
+                height: '4px',
+                borderRadius: '2px',
+                background: 'linear-gradient(90deg, #1976d2 0%, #42a5f5 100%)',
+              }}
+            />
+            <Box
+              sx={{
+                width: '24px',
+                height: '4px',
+                borderRadius: '2px',
+                background: 'linear-gradient(90deg, #1976d2 0%, #42a5f5 100%)',
+              }}
+            />
           </Box>
         </Box>
 
