@@ -1,0 +1,21 @@
+/* EvolveUI App Styles */
+.App {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Panel animations */
+.conversation-panel {
+  transition: transform 0.3s ease-in-out;
+}
+
+.workpad-panel {
+  transition: transform 0.3s ease-in-out;
+}
+
+/* Message styling */
+.message-content {
+  word-wrap: break-word;
+  white-space: pre-wrap;
+}
