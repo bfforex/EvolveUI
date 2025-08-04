@@ -10,17 +10,22 @@ import {
   Menu as MenuIcon,
   Settings as SettingsIcon,
   Code as CodeIcon,
+  Storage as StorageIcon,
 } from '@mui/icons-material';
 
 interface TopBarProps {
   onToggleConversations: () => void;
   onToggleWorkpad: () => void;
+  onOpenSettings: () => void;
+  onOpenKnowledge: () => void;
   isWorkpadOpen: boolean;
 }
 
 export const TopBar: React.FC<TopBarProps> = ({
   onToggleConversations,
   onToggleWorkpad,
+  onOpenSettings,
+  onOpenKnowledge,
   isWorkpadOpen,
 }) => {
   return (
@@ -72,7 +77,16 @@ export const TopBar: React.FC<TopBarProps> = ({
           
           <IconButton
             color="inherit"
+            aria-label="knowledge base"
+            onClick={onOpenKnowledge}
+          >
+            <StorageIcon />
+          </IconButton>
+          
+          <IconButton
+            color="inherit"
             aria-label="settings"
+            onClick={onOpenSettings}
           >
             <SettingsIcon />
           </IconButton>

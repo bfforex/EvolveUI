@@ -27,3 +27,17 @@ def read_root():
 @app.get("/health")
 def health_check():
     return {"status": "healthy"}
+
+@app.get("/api/status")
+def get_api_status():
+    """Get overall API status"""
+    return {
+        "status": "healthy",
+        "version": "1.0.0",
+        "features": {
+            "ollama_integration": True,
+            "conversation_persistence": True,
+            "chromadb_integration": True,
+            "web_search": False  # Not implemented yet
+        }
+    }

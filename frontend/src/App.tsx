@@ -6,6 +6,8 @@ import { ConversationPanel } from './components/conversations/ConversationPanel'
 import { ChatPanel } from './components/chat/ChatPanel';
 import { WorkpadPanel } from './components/workpad/WorkpadPanel';
 import { TopBar } from './components/layout/TopBar';
+import { SettingsPanel } from './components/settings/SettingsPanel';
+import { KnowledgePanel } from './components/settings/KnowledgePanel';
 import './App.css';
 
 // Create dark theme matching the color scheme requirements
@@ -32,6 +34,8 @@ const darkTheme = createTheme({
 function App() {
   const [isConversationPanelOpen, setIsConversationPanelOpen] = useState(true);
   const [isWorkpadOpen, setIsWorkpadOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isKnowledgeOpen, setIsKnowledgeOpen] = useState(false);
   const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
 
   return (
@@ -47,6 +51,8 @@ function App() {
         <TopBar 
           onToggleConversations={() => setIsConversationPanelOpen(!isConversationPanelOpen)}
           onToggleWorkpad={() => setIsWorkpadOpen(!isWorkpadOpen)}
+          onOpenSettings={() => setIsSettingsOpen(true)}
+          onOpenKnowledge={() => setIsKnowledgeOpen(true)}
           isWorkpadOpen={isWorkpadOpen}
         />
         
@@ -70,6 +76,18 @@ function App() {
             <WorkpadPanel onClose={() => setIsWorkpadOpen(false)} />
           )}
         </Box>
+
+        {/* Settings Panel */}
+        <SettingsPanel 
+          open={isSettingsOpen}
+          onClose={() => setIsSettingsOpen(false)}
+        />
+
+        {/* Knowledge Panel */}
+        <KnowledgePanel 
+          open={isKnowledgeOpen}
+          onClose={() => setIsKnowledgeOpen(false)}
+        />
       </Box>
     </ThemeProvider>
   );
