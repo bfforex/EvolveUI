@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - OLLAMA_HOST=host.docker.internal:11434
+    volumes:
+      - ./backend/conversations.json:/app/conversations.json
+    networks:
+      - evolveui-network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    environment:
+      - REACT_APP_BACKEND_URL=http://localhost:8000
+    networks:
+      - evolveui-network
+
+networks:
+  evolveui-network:
+    driver: bridge
