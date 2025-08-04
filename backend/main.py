@@ -3,8 +3,15 @@ from fastapi.middleware.cors import CORSMiddleware
 from api.models import router as models_router
 from api.conversations import router as conversations_router
 from api.search import router as search_router
+from utils.system_status import get_system_status
 
-app = FastAPI(title="EvolveUI Backend", version="1.0.0")
+app = FastAPI(
+    title="EvolveUI Backend API",
+    version="1.0.0",
+    description="Enhanced Local Interface for Ollama Models with RAG and Knowledge Management",
+    docs_url="/docs",
+    redoc_url="/redoc"
+)
 
 # Configure CORS
 app.add_middleware(
@@ -20,24 +27,22 @@ app.include_router(models_router, prefix="/api/models", tags=["models"])
 app.include_router(conversations_router, prefix="/api/conversations", tags=["conversations"])
 app.include_router(search_router, prefix="/api/search", tags=["search"])
 
-@app.get("/")
+@app.get("/", tags=["system"])
 def read_root():
-    return {"message": "EvolveUI Backend API"}
+    """API root endpoint"""
+    return {
+        "message": "EvolveUI Backend API",
+        "version": "1.0.0",
+        "docs": "/docs",
+        "status": "/api/status"
+    }
 
-@app.get("/health")
+@app.get("/health", tags=["system"])
 def health_check():
+    """Simple health check endpoint"""
     return {"status": "healthy"}
 
-@app.get("/api/status")
-def get_api_status():
-    """Get overall API status"""
-    return {
-        "status": "healthy",
-        "version": "1.0.0",
-        "features": {
-            "ollama_integration": True,
-            "conversation_persistence": True,
-            "chromadb_integration": True,
-            "web_search": False  # Not implemented yet
-        }
-    }
+@app.get("/api/status", tags=["system"])
+async def get_api_status():
+    """Get comprehensive system status including all services"""
+    return await get_system_status()
