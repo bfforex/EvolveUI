@@ -139,8 +139,11 @@ export const ThinkingProcess: React.FC<ThinkingProcessProps> = ({
     if (isThinking) {
       setIsComplete(false);
       setCurrentDuration(0);
+    } else if (thinkingDuration && thinkingDuration > 0) {
+      // If we have a thinking duration but not currently thinking, mark as complete
+      setIsComplete(true);
     }
-  }, [isThinking]);
+  }, [isThinking, thinkingDuration]);
 
   // Format duration
   const formatDuration = (ms: number) => {
@@ -150,8 +153,8 @@ export const ThinkingProcess: React.FC<ThinkingProcessProps> = ({
 
   const finalDuration = isComplete ? currentDuration : (thinkingDuration || currentDuration);
 
-  // Don't render anything if not thinking and no completed content
-  if (!isThinking && !isComplete && !displayedText) {
+  // Don't render anything if not thinking and no completed content and no duration
+  if (!isThinking && !isComplete && !displayedText && !thinkingDuration) {
     return null;
   }
 
@@ -234,7 +237,7 @@ export const ThinkingProcess: React.FC<ThinkingProcessProps> = ({
       )}
 
       {/* Show dropdown for completed thinking */}
-      {isComplete && showDropdown && !isExpanded && (
+      {(isComplete || (thinkingDuration && thinkingDuration > 0 && !isThinking)) && showDropdown && !isExpanded && (
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
           <IconButton
             size="small"
