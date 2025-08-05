@@ -84,10 +84,15 @@ class ChromaDBService:
         
         doc_id = str(uuid.uuid4())
         
+        # Ensure metadata is a dictionary and filter out None values
+        safe_metadata = {}
+        if metadata:
+            safe_metadata = {k: v for k, v in metadata.items() if v is not None}
+        
         try:
             self.collection.add(
                 documents=[content],
-                metadatas=[metadata or {}],
+                metadatas=[safe_metadata],
                 ids=[doc_id]
             )
             return doc_id
@@ -108,10 +113,14 @@ class ChromaDBService:
             
             documents = []
             for i, doc in enumerate(results['documents'][0]):
+                metadata = results['metadatas'][0][i] if results['metadatas'] and results['metadatas'][0] and i < len(results['metadatas'][0]) else {}
+                # Ensure metadata is a dictionary and filter out None values
+                safe_metadata = {k: v for k, v in metadata.items() if v is not None} if metadata else {}
+                
                 documents.append({
                     'id': results['ids'][0][i],
                     'content': doc,
-                    'metadata': results['metadatas'][0][i] if results['metadatas'][0] else {},
+                    'metadata': safe_metadata,
                     'distance': results['distances'][0][i] if results['distances'] and results['distances'][0] else 0
                 })
             
@@ -134,18 +143,22 @@ class ChromaDBService:
                 content = msg.get('content', '')
                 conversation_text += f"{role}: {content}\n"
             
+            # Ensure all metadata values are not None and properly typed
             metadata = {
                 'type': 'conversation',
-                'conversation_id': conversation_id,
+                'conversation_id': str(conversation_id),
                 'message_count': len(messages),
-                'timestamp': messages[-1].get('timestamp') if messages else ''
+                'timestamp': messages[-1].get('timestamp', '') if messages else ''
             }
+            
+            # Filter out None values from metadata
+            safe_metadata = {k: v for k, v in metadata.items() if v is not None}
             
             # Add to conversations collection
             doc_id = str(uuid.uuid4())
             self.conversations_collection.add(
                 documents=[conversation_text],
-                metadatas=[metadata],
+                metadatas=[safe_metadata],
                 ids=[doc_id]
             )
             
@@ -172,10 +185,14 @@ class ChromaDBService:
             
             conversations = []
             for i, doc in enumerate(results['documents'][0]):
+                metadata = results['metadatas'][0][i] if results['metadatas'] and results['metadatas'][0] and i < len(results['metadatas'][0]) else {}
+                # Ensure metadata is a dictionary and filter out None values
+                safe_metadata = {k: v for k, v in metadata.items() if v is not None} if metadata else {}
+                
                 conversations.append({
                     'id': results['ids'][0][i],
                     'content': doc,
-                    'metadata': results['metadatas'][0][i] if results['metadatas'][0] else {},
+                    'metadata': safe_metadata,
                     'distance': results['distances'][0][i] if results['distances'] and results['distances'][0] else 0
                 })
             

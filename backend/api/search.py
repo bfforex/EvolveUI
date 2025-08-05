@@ -9,36 +9,46 @@ from services.code_execution_service import CodeExecutionService
 
 router = APIRouter()
 
-# Initialize services
+# Initialize services with default configuration
+search_config = {
+    'default_engine': 'duckduckgo',
+    'engines': {
+        'duckduckgo': {'enabled': True},
+        'searxng': {'enabled': False, 'instance_url': 'https://searx.be'},
+        'google': {'enabled': False, 'api_key': None, 'cx': None},
+        'bing': {'enabled': False, 'api_key': None}
+    }
+}
+
 chromadb_service = ChromaDBService()
 rag_service = RAGService(chromadb_service)
-web_search_service = WebSearchService()
+web_search_service = WebSearchService(search_config)
 file_processing_service = FileProcessingService(chromadb_service)
 code_execution_service = CodeExecutionService()
 
 @router.get("/web")
-async def search_web(q: str, limit: Optional[int] = 5):
-    """Search the web using DuckDuckGo"""
+async def search_web(q: str, limit: Optional[int] = 5, engine: Optional[str] = None):
+    """Search the web using the specified search engine"""
     try:
-        result = await web_search_service.search_web(q, limit)
+        result = await web_search_service.search_web(q, limit, engine)
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Search error: {str(e)}")
 
 @router.get("/news")
-async def search_news(q: str, limit: Optional[int] = 3):
-    """Search for news using DuckDuckGo"""
+async def search_news(q: str, limit: Optional[int] = 3, engine: Optional[str] = None):
+    """Search for news using the specified search engine"""
     try:
-        result = await web_search_service.search_news(q, limit)
+        result = await web_search_service.search_news(q, limit, engine)
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"News search error: {str(e)}")
 
 @router.get("/auto")
-async def auto_search(q: str):
+async def auto_search(q: str, engine: Optional[str] = None):
     """Automatically determine if search is needed and perform it"""
     try:
-        result = await web_search_service.auto_search(q)
+        result = await web_search_service.auto_search(q, engine)
         if result is None:
             return {
                 "search_performed": False,
@@ -51,6 +61,59 @@ async def auto_search(q: str):
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Auto search error: {str(e)}")
+
+@router.get("/engines")
+async def get_search_engines():
+    """Get list of supported search engines and their configuration requirements"""
+    try:
+        engines = web_search_service.get_supported_engines()
+        status = web_search_service.get_service_status()
+        
+        return {
+            "engines": engines,
+            "current_status": status,
+            "default_engine": search_config.get('default_engine', 'duckduckgo')
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error getting engines: {str(e)}")
+
+@router.post("/config")
+async def update_search_config(config: dict):
+    """Update search engine configuration"""
+    try:
+        global search_config, web_search_service
+        
+        # Validate configuration
+        if 'engines' in config:
+            for engine_name, engine_config in config['engines'].items():
+                if engine_name not in ['duckduckgo', 'searxng', 'google', 'bing']:
+                    raise HTTPException(status_code=400, detail=f"Unsupported engine: {engine_name}")
+        
+        # Update configuration
+        search_config.update(config)
+        
+        # Reinitialize web search service with new config
+        web_search_service = WebSearchService(search_config)
+        
+        return {
+            "success": True,
+            "message": "Search configuration updated successfully",
+            "config": search_config
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error updating config: {str(e)}")
+
+@router.get("/config")
+async def get_search_config():
+    """Get current search engine configuration"""
+    try:
+        return {
+            "config": search_config,
+            "status": web_search_service.get_service_status()
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error getting config: {str(e)}")
 
 @router.get("/knowledge")
 async def search_knowledge(q: str, limit: Optional[int] = 5):
