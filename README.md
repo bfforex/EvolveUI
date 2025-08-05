@@ -15,10 +15,16 @@ EvolveUI is a comprehensive local web interface for interacting with Ollama mode
 
 ### Advanced Capabilities
 - **Persistent Memory**: Knowledge database integration (ChromaDB)
-- **RAG (Retrieval Augmented Generation)**: Context-aware responses
-- **Auto Web Search**: Intelligent web search integration
-- **File Processing**: PDF, DOCX, TXT upload and processing
-- **Code Execution**: Safe code execution environment
+- **RAG (Retrieval Augmented Generation)**: Context-aware responses using vector similarity search
+- **Enhanced Web Search**: Multi-engine search with auto-detection
+  - **DuckDuckGo**: Privacy-focused search (default, no API key required)
+  - **SearXNG**: Self-hosted search aggregator for privacy
+  - **Google Custom Search**: High-quality commercial search results
+  - **Bing Search API**: Microsoft's search engine integration
+- **Intelligent Search Detection**: Automatically determines when queries need web search
+- **File Processing**: PDF, DOCX, TXT upload and processing with vector indexing
+- **Code Execution**: Safe sandboxed code execution environment
+- **System Monitoring**: Comprehensive health checks and performance metrics
 
 ### UI/UX Features
 - **Dark Theme**: Professional dark blue color scheme with gold accents
@@ -29,14 +35,67 @@ EvolveUI is a comprehensive local web interface for interacting with Ollama mode
 
 ## 🚀 Quick Start
 
-### Prerequisites
+### 🐳 Docker Installation (Recommended)
+
+The easiest way to get EvolveUI running is with Docker. This method handles all dependencies and configuration automatically.
+
+#### Prerequisites
+- Docker and Docker Compose installed
+- Ollama installed and running locally
+
+#### Installation Steps
+
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/bfforex/EvolveUI.git
+   cd EvolveUI
+   ```
+
+2. **Start Ollama** (in a separate terminal)
+   ```bash
+   ollama serve
+   ```
+
+3. **Start EvolveUI with Docker**
+   ```bash
+   docker-compose up --build
+   ```
+
+4. **Open your browser**
+   Navigate to `http://localhost:3000`
+
+The Docker setup will automatically:
+- Build and configure the backend service (Python/FastAPI)
+- Build and configure the frontend service (React/TypeScript)
+- Set up networking between services
+- Mount necessary volumes for data persistence
+- Configure automatic restart policies
+
+#### Docker Configuration Details
+
+**Services:**
+- **Backend**: Runs on port 8000, connects to Ollama via `host.docker.internal:11434`
+- **Frontend**: Runs on port 3000 (mapped to nginx port 80 internally)
+- **Networking**: Internal Docker network for service communication
+- **Volumes**: Persistent storage for conversations and ChromaDB data
+
+**Environment Variables:**
+- `OLLAMA_HOST`: Configured to connect to host Ollama instance
+- `REACT_APP_BACKEND_URL`: Frontend API endpoint configuration
+- `LOG_LEVEL`: Backend logging level (INFO by default)
+
+### 💻 Manual Installation (Alternative)
+
+If you prefer to run EvolveUI without Docker:
+
+#### Prerequisites
 - Node.js (v16 or higher)
 - Python 3.8+
 - Ollama installed and running locally
 
 **Note for Windows users**: EvolveUI now supports Windows! The `uvloop` dependency (which provides performance improvements on Unix systems) is automatically excluded on Windows platforms to ensure compatibility.
 
-### Installation
+#### Installation Steps
 
 1. **Clone the repository**
    ```bash
@@ -128,6 +187,26 @@ EvolveUI/
 - **Interface**: System fonts (-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto)
 - **Code**: Monaco, Consolas, 'Courier New', monospace
 
+## 📚 Documentation
+
+### Core Documentation
+- **README.md** - Main project documentation and setup guide
+- **[docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)** - Development guide and API reference
+
+### Feature Documentation
+- **[docs/search_engines.md](docs/search_engines.md)** - Comprehensive search engine integration guide
+  - DuckDuckGo, SearXNG, Google, and Bing setup
+  - API usage examples and configuration
+  - Commercial API setup instructions
+- **[docs/monitoring.md](docs/monitoring.md)** - System monitoring and logging guide
+  - Health check endpoints and system status
+  - Performance metrics and debugging
+  - Log analysis and troubleshooting
+
+### API Documentation
+- **Interactive API Docs**: `http://localhost:8000/docs` (when backend is running)
+- **Alternative API Docs**: `http://localhost:8000/redoc`
+
 ## 🔧 Configuration
 
 ### Backend Configuration
@@ -149,9 +228,25 @@ The frontend is configured to connect to the backend at `localhost:8000`. CORS i
 - `POST /api/conversations/{id}/messages` - Add message to conversation
 - `DELETE /api/conversations/{id}` - Delete conversation
 
-### Search API (Planned)
-- `GET /api/search/web` - Web search
+### Search API (Implemented)
+- `GET /api/search/web` - Multi-engine web search
+- `GET /api/search/news` - News search
+- `GET /api/search/auto` - Auto-detection search
+- `GET /api/search/engines` - Get available search engines
+- `POST /api/search/config` - Configure search engines
 - `GET /api/search/knowledge` - Knowledge base search
+- `POST /api/search/knowledge/add` - Add to knowledge base
+- `GET /api/search/status` - Search services status
+
+### File Processing API
+- `POST /api/search/files/upload` - Upload and process files
+- `GET /api/search/files/search` - Search through uploaded files
+- `GET /api/search/files/types` - Get supported file types
+
+### Monitoring API
+- `GET /api/status` - Comprehensive system status
+- `GET /health` - Basic health check
+- `GET /api/metrics` - Performance metrics
 
 ## 🧪 Development
 
@@ -183,11 +278,13 @@ npm run build
 - [x] Conversation management and persistence
 - [x] Workpad/Canvas functionality
 
-### Phase 2: Enhanced AI (In Progress)
+### Phase 2: Enhanced AI ✅
 - [x] ChromaDB integration for RAG
-- [x] Web search integration
+- [x] Multi-engine web search integration (DuckDuckGo, SearXNG, Google, Bing)
+- [x] Intelligent search auto-detection
 - [x] Settings panel and configuration
 - [x] Document processing (PDF, DOCX, TXT)
+- [x] System monitoring and health checks
 
 ### Phase 3: Advanced Features
 - [ ] Code execution environment
@@ -220,8 +317,17 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 For questions, issues, or contributions, please:
 - Open an issue on GitHub
-- Check the documentation in the `docs/` folder
+- Check the documentation in the `docs/` folder:
+  - [Search Engine Setup Guide](docs/search_engines.md)
+  - [Monitoring and System Status](docs/monitoring.md)
+  - [Development Guide](docs/DEVELOPMENT.md)
 - Review the API documentation at `http://localhost:8000/docs` when running the backend
+- Check system status at `http://localhost:8000/api/status`
+
+### Quick Troubleshooting
+- **Search not working?** Check [Search Engine Troubleshooting](docs/search_engines.md#troubleshooting)
+- **System issues?** Review [Monitoring Guide](docs/monitoring.md#debugging-and-troubleshooting)
+- **Docker problems?** Ensure Ollama is running and accessible at `localhost:11434`
 
 ---
 
