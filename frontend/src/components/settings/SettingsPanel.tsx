@@ -85,6 +85,30 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ open, onClose }) =
       searchEngine: 'duckduckgo',
       maxSearchResults: 5,
       
+      // Search Engine Configurations
+      searchEngines: {
+        duckduckgo: {
+          enabled: true,
+          name: 'DuckDuckGo'
+        },
+        searxng: {
+          enabled: false,
+          name: 'SearXNG',
+          instanceUrl: 'https://searx.be'
+        },
+        google: {
+          enabled: false,
+          name: 'Google Custom Search',
+          apiKey: '',
+          cx: ''
+        },
+        bing: {
+          enabled: false,
+          name: 'Bing Search',
+          apiKey: ''
+        }
+      },
+      
       // Evolver Settings
       evolverEnabled: false,
       learningEnabled: false,
@@ -108,11 +132,57 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ open, onClose }) =
     setSettings((prev: any) => ({ ...prev, [setting]: value }));
   };
 
-  const handleSave = () => {
-    // Save settings to localStorage
-    localStorage.setItem('evolveui-settings', JSON.stringify(settings));
-    console.log('Saving settings:', settings);
-    onClose();
+  const handleSave = async () => {
+    try {
+      // Save settings to localStorage
+      localStorage.setItem('evolveui-settings', JSON.stringify(settings));
+      
+      // Send search engine configuration to backend
+      if (settings.searchEngines) {
+        const searchConfig = {
+          default_engine: settings.searchEngine,
+          engines: {
+            duckduckgo: {
+              enabled: settings.searchEngines.duckduckgo.enabled
+            },
+            searxng: {
+              enabled: settings.searchEngines.searxng.enabled,
+              instance_url: settings.searchEngines.searxng.instanceUrl
+            },
+            google: {
+              enabled: settings.searchEngines.google.enabled,
+              api_key: settings.searchEngines.google.apiKey,
+              cx: settings.searchEngines.google.cx
+            },
+            bing: {
+              enabled: settings.searchEngines.bing.enabled,
+              api_key: settings.searchEngines.bing.apiKey
+            }
+          }
+        };
+        
+        try {
+          const response = await fetch('http://localhost:8000/api/search/config', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(searchConfig)
+          });
+          
+          if (!response.ok) {
+            console.warn('Failed to update search configuration on backend');
+          }
+        } catch (error) {
+          console.warn('Failed to connect to backend for search configuration:', error);
+        }
+      }
+      
+      console.log('Settings saved successfully:', settings);
+      onClose();
+    } catch (error) {
+      console.error('Error saving settings:', error);
+    }
   };
 
   const handleReset = () => {
@@ -321,7 +391,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ open, onClose }) =
                 />
                 
                 <TextField
-                  label="Search Engine"
+                  label="Default Search Engine"
                   select
                   value={settings.searchEngine}
                   onChange={(e) => handleSettingChange('searchEngine', e.target.value)}
@@ -333,8 +403,9 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ open, onClose }) =
                   }}
                 >
                   <option value="duckduckgo">DuckDuckGo</option>
-                  <option value="bing">Bing</option>
-                  <option value="google">Google (API Key Required)</option>
+                  <option value="searxng">SearXNG</option>
+                  <option value="google">Google Custom Search</option>
+                  <option value="bing">Bing Search</option>
                 </TextField>
                 
                 <TextField
@@ -346,6 +417,149 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ open, onClose }) =
                   size="small"
                   disabled={!settings.webSearchEnabled}
                 />
+
+                <Typography variant="h6" sx={{ mt: 2 }}>
+                  Search Engine Configuration
+                </Typography>
+
+                {/* DuckDuckGo Configuration */}
+                <Box sx={{ border: '1px solid rgba(255, 255, 255, 0.12)', borderRadius: 1, p: 2 }}>
+                  <Typography variant="subtitle1" gutterBottom>
+                    DuckDuckGo
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" gutterBottom>
+                    Free search engine, no API key required
+                  </Typography>
+                  <FormControlLabel
+                    control={
+                      <Switch 
+                        checked={settings.searchEngines.duckduckgo.enabled}
+                        onChange={(e) => handleSettingChange('searchEngines', {
+                          ...settings.searchEngines,
+                          duckduckgo: { ...settings.searchEngines.duckduckgo, enabled: e.target.checked }
+                        })}
+                      />
+                    }
+                    label="Enable DuckDuckGo"
+                  />
+                </Box>
+
+                {/* SearXNG Configuration */}
+                <Box sx={{ border: '1px solid rgba(255, 255, 255, 0.12)', borderRadius: 1, p: 2 }}>
+                  <Typography variant="subtitle1" gutterBottom>
+                    SearXNG
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" gutterBottom>
+                    Self-hosted search engine aggregator, no API key required
+                  </Typography>
+                  <FormControlLabel
+                    control={
+                      <Switch 
+                        checked={settings.searchEngines.searxng.enabled}
+                        onChange={(e) => handleSettingChange('searchEngines', {
+                          ...settings.searchEngines,
+                          searxng: { ...settings.searchEngines.searxng, enabled: e.target.checked }
+                        })}
+                      />
+                    }
+                    label="Enable SearXNG"
+                  />
+                  <TextField
+                    label="SearXNG Instance URL"
+                    value={settings.searchEngines.searxng.instanceUrl}
+                    onChange={(e) => handleSettingChange('searchEngines', {
+                      ...settings.searchEngines,
+                      searxng: { ...settings.searchEngines.searxng, instanceUrl: e.target.value }
+                    })}
+                    fullWidth
+                    size="small"
+                    disabled={!settings.searchEngines.searxng.enabled}
+                    placeholder="https://searx.be"
+                    sx={{ mt: 1 }}
+                  />
+                </Box>
+
+                {/* Google Configuration */}
+                <Box sx={{ border: '1px solid rgba(255, 255, 255, 0.12)', borderRadius: 1, p: 2 }}>
+                  <Typography variant="subtitle1" gutterBottom>
+                    Google Custom Search
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" gutterBottom>
+                    Requires Google Cloud API key and Custom Search Engine ID
+                  </Typography>
+                  <FormControlLabel
+                    control={
+                      <Switch 
+                        checked={settings.searchEngines.google.enabled}
+                        onChange={(e) => handleSettingChange('searchEngines', {
+                          ...settings.searchEngines,
+                          google: { ...settings.searchEngines.google, enabled: e.target.checked }
+                        })}
+                      />
+                    }
+                    label="Enable Google Search"
+                  />
+                  <TextField
+                    label="Google API Key"
+                    value={settings.searchEngines.google.apiKey}
+                    onChange={(e) => handleSettingChange('searchEngines', {
+                      ...settings.searchEngines,
+                      google: { ...settings.searchEngines.google, apiKey: e.target.value }
+                    })}
+                    fullWidth
+                    size="small"
+                    disabled={!settings.searchEngines.google.enabled}
+                    type="password"
+                    sx={{ mt: 1 }}
+                  />
+                  <TextField
+                    label="Custom Search Engine ID (CX)"
+                    value={settings.searchEngines.google.cx}
+                    onChange={(e) => handleSettingChange('searchEngines', {
+                      ...settings.searchEngines,
+                      google: { ...settings.searchEngines.google, cx: e.target.value }
+                    })}
+                    fullWidth
+                    size="small"
+                    disabled={!settings.searchEngines.google.enabled}
+                    sx={{ mt: 1 }}
+                  />
+                </Box>
+
+                {/* Bing Configuration */}
+                <Box sx={{ border: '1px solid rgba(255, 255, 255, 0.12)', borderRadius: 1, p: 2 }}>
+                  <Typography variant="subtitle1" gutterBottom>
+                    Bing Search
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" gutterBottom>
+                    Requires Microsoft Azure Cognitive Services API key
+                  </Typography>
+                  <FormControlLabel
+                    control={
+                      <Switch 
+                        checked={settings.searchEngines.bing.enabled}
+                        onChange={(e) => handleSettingChange('searchEngines', {
+                          ...settings.searchEngines,
+                          bing: { ...settings.searchEngines.bing, enabled: e.target.checked }
+                        })}
+                      />
+                    }
+                    label="Enable Bing Search"
+                  />
+                  <TextField
+                    label="Bing API Key"
+                    value={settings.searchEngines.bing.apiKey}
+                    onChange={(e) => handleSettingChange('searchEngines', {
+                      ...settings.searchEngines,
+                      bing: { ...settings.searchEngines.bing, apiKey: e.target.value }
+                    })}
+                    fullWidth
+                    size="small"
+                    disabled={!settings.searchEngines.bing.enabled}
+                    type="password"
+                    sx={{ mt: 1 }}
+                  />
+                </Box>
               </Box>
             </TabPanel>
 
