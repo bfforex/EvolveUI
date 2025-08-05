@@ -58,6 +58,10 @@ The easiest way to get EvolveUI running is with Docker. This method handles all 
 
 3. **Start EvolveUI with Docker**
    ```bash
+   # Easy startup with the provided script
+   ./docker-start.sh
+   
+   # Or manually with docker compose
    docker-compose up --build
    ```
 
@@ -83,6 +87,29 @@ The Docker setup will automatically:
 - `OLLAMA_HOST`: Configured to connect to host Ollama instance
 - `REACT_APP_BACKEND_URL`: Frontend API endpoint configuration
 - `LOG_LEVEL`: Backend logging level (INFO by default)
+
+#### Docker Troubleshooting
+
+**Common Issues:**
+- **Ollama connection failed**: Ensure Ollama is running with `ollama serve`
+- **Port conflicts**: Make sure ports 3000 and 8000 are available
+- **Build failures**: Run `docker compose down` and `docker compose up --build --force-recreate`
+- **Permission issues**: Ensure the startup script is executable with `chmod +x docker-start.sh`
+
+**Useful Commands:**
+```bash
+# View service logs
+docker compose logs -f
+
+# Restart services
+docker compose restart
+
+# Stop and remove all containers
+docker compose down
+
+# Rebuild and start fresh
+docker compose down && docker compose up --build
+```
 
 ### 💻 Manual Installation (Alternative)
 

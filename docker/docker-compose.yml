@@ -1,3 +1,14 @@
+# DEPRECATED: This docker-compose.yml file has been moved to the project root
+# Please use the docker-compose.yml file in the project root directory instead
+# 
+# To start EvolveUI with Docker:
+# 1. cd .. (go to project root)
+# 2. ./docker-start.sh (recommended)
+#    OR
+# 3. docker compose up --build
+#
+# This file is kept for reference but may be removed in future versions
+
 version: '3.8'
 
 services:
