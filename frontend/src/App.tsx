@@ -10,6 +10,7 @@ import { SettingsPanel } from './components/settings/SettingsPanel';
 import { KnowledgePanel } from './components/settings/KnowledgePanel';
 import { FileUploadDialog } from './components/chat/FileUploadDialog';
 import { CodeExecutionDialog } from './components/chat/CodeExecutionDialog';
+import { ThinkingDemo } from './components/chat/ThinkingDemo';
 import './App.css';
 
 // Create dark theme matching the color scheme requirements
@@ -41,6 +42,7 @@ function App() {
   const [isFileUploadOpen, setIsFileUploadOpen] = useState(false);
   const [isCodeExecutionOpen, setIsCodeExecutionOpen] = useState(false);
   const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
+  const [showDemo, setShowDemo] = useState(false);
   
   // Load settings from localStorage
   const [settings, setSettings] = useState(() => {
@@ -81,77 +83,118 @@ function App() {
   return (
     <ThemeProvider theme={darkTheme}>
       <CssBaseline />
-      <Box sx={{ 
-        display: 'flex', 
-        flexDirection: 'column', 
-        height: '100vh',
-        bgcolor: 'background.default'
-      }}>
-        {/* Top Bar */}
-        <TopBar 
-          onToggleConversations={() => setIsConversationPanelOpen(!isConversationPanelOpen)}
-          onToggleWorkpad={() => setIsWorkpadOpen(!isWorkpadOpen)}
-          onOpenSettings={() => setIsSettingsOpen(true)}
-          onOpenKnowledge={() => setIsKnowledgeOpen(true)}
-          onOpenFileUpload={() => setIsFileUploadOpen(true)}
-          onOpenCodeExecution={() => setIsCodeExecutionOpen(true)}
-          isWorkpadOpen={isWorkpadOpen}
-        />
-        
-        {/* Main Content Area */}
-        <Box sx={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
-          {/* Left Panel - Conversations */}
-          <ConversationPanel 
-            isOpen={isConversationPanelOpen}
-            selectedConversationId={selectedConversationId}
-            onSelectConversation={setSelectedConversationId}
-          />
-          
-          {/* Center Panel - Chat */}
-          <ChatPanel 
-            conversationId={selectedConversationId}
-            onNewConversation={(id) => setSelectedConversationId(id)}
-            showThinkingProcess={settings.showThinkingProcess}
-            webSearchEnabled={settings.webSearchEnabled}
-            evolverEnabled={settings.evolverEnabled}
-            ragEnabled={settings.ragEnabled}
-            settings={settings}
-          />
-          
-          {/* Right Panel - Workpad */}
-          {isWorkpadOpen && (
-            <WorkpadPanel onClose={() => setIsWorkpadOpen(false)} />
-          )}
+      
+      {/* Show demo if requested */}
+      {showDemo ? (
+        <Box sx={{ position: 'relative' }}>
+          <Box sx={{ position: 'absolute', top: 16, right: 16, zIndex: 1000 }}>
+            <button 
+              onClick={() => setShowDemo(false)}
+              style={{
+                background: '#1976d2',
+                color: 'white',
+                border: 'none',
+                padding: '8px 16px',
+                borderRadius: '4px',
+                cursor: 'pointer'
+              }}
+            >
+              Back to Main App
+            </button>
+          </Box>
+          <ThinkingDemo />
         </Box>
+      ) : (
+        <Box sx={{ 
+          display: 'flex', 
+          flexDirection: 'column', 
+          height: '100vh',
+          bgcolor: 'background.default'
+        }}>
+          {/* Top Bar */}
+          <TopBar 
+            onToggleConversations={() => setIsConversationPanelOpen(!isConversationPanelOpen)}
+            onToggleWorkpad={() => setIsWorkpadOpen(!isWorkpadOpen)}
+            onOpenSettings={() => setIsSettingsOpen(true)}
+            onOpenKnowledge={() => setIsKnowledgeOpen(true)}
+            onOpenFileUpload={() => setIsFileUploadOpen(true)}
+            onOpenCodeExecution={() => setIsCodeExecutionOpen(true)}
+            isWorkpadOpen={isWorkpadOpen}
+          />
+          
+          {/* Demo button */}
+          <Box sx={{ position: 'absolute', top: 80, right: 16, zIndex: 1000 }}>
+            <button 
+              onClick={() => setShowDemo(true)}
+              style={{
+                background: '#ffd700',
+                color: 'black',
+                border: 'none',
+                padding: '8px 16px',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontWeight: 'bold'
+              }}
+            >
+              Show Thinking Process Demo
+            </button>
+          </Box>
+          
+          {/* Main Content Area */}
+          <Box sx={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+            {/* Left Panel - Conversations */}
+            <ConversationPanel 
+              isOpen={isConversationPanelOpen}
+              selectedConversationId={selectedConversationId}
+              onSelectConversation={setSelectedConversationId}
+            />
+            
+            {/* Center Panel - Chat */}
+            <ChatPanel 
+              conversationId={selectedConversationId}
+              onNewConversation={(id) => setSelectedConversationId(id)}
+              showThinkingProcess={settings.showThinkingProcess}
+              webSearchEnabled={settings.webSearchEnabled}
+              evolverEnabled={settings.evolverEnabled}
+              ragEnabled={settings.ragEnabled}
+              settings={settings}
+            />
+            
+            {/* Right Panel - Workpad */}
+            {isWorkpadOpen && (
+              <WorkpadPanel onClose={() => setIsWorkpadOpen(false)} />
+            )}
+          </Box>
 
-        {/* Settings Panel */}
-        <SettingsPanel 
-          open={isSettingsOpen}
-          onClose={() => setIsSettingsOpen(false)}
-        />
+          {/* Settings Panel */}
+          <SettingsPanel 
+            open={isSettingsOpen}
+            onClose={() => setIsSettingsOpen(false)}
+          />
 
-        {/* Knowledge Panel */}
-        <KnowledgePanel 
-          open={isKnowledgeOpen}
-          onClose={() => setIsKnowledgeOpen(false)}
-        />
+          {/* Knowledge Panel */}
+          <KnowledgePanel 
+            open={isKnowledgeOpen}
+            onClose={() => setIsKnowledgeOpen(false)}
+          />
 
-        {/* File Upload Dialog */}
-        <FileUploadDialog
-          open={isFileUploadOpen}
-          onClose={() => setIsFileUploadOpen(false)}
-          onUploadComplete={(results) => {
-            console.log('Files uploaded:', results);
-            // Optionally show notification or refresh knowledge base
-          }}
-        />
+          {/* File Upload Dialog */}
+          <FileUploadDialog
+            open={isFileUploadOpen}
+            onClose={() => setIsFileUploadOpen(false)}
+            onUploadComplete={(results) => {
+              console.log('Files uploaded:', results);
+              // Optionally show notification or refresh knowledge base
+            }}
+          />
 
-        {/* Code Execution Dialog */}
-        <CodeExecutionDialog
-          open={isCodeExecutionOpen}
-          onClose={() => setIsCodeExecutionOpen(false)}
-        />
-      </Box>
+          {/* Code Execution Dialog */}
+          <CodeExecutionDialog
+            open={isCodeExecutionOpen}
+            onClose={() => setIsCodeExecutionOpen(false)}
+          />
+        </Box>
+      )}
     </ThemeProvider>
   );
 }

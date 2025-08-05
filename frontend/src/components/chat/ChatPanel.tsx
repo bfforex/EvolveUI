@@ -26,12 +26,14 @@ import {
   Chat as ConversationIcon,
   OpenInNew as OpenInNewIcon,
 } from '@mui/icons-material';
+import { ThinkingProcess } from './ThinkingProcess';
 
 interface Message {
   role: 'user' | 'assistant';
   content: string;
   timestamp: string;
   thinking?: string; // Optional thinking process content
+  thinkingDuration?: number; // Duration of thinking process in milliseconds
   context_sources?: Array<{
     type: 'knowledge' | 'conversation' | 'web_search';
     title?: string;
@@ -62,7 +64,7 @@ interface ChatPanelProps {
 export const ChatPanel: React.FC<ChatPanelProps> = ({
   conversationId,
   onNewConversation,
-  showThinkingProcess = false,
+  showThinkingProcess = true, // Default to true for demo
   webSearchEnabled = true,
   evolverEnabled = false,
   ragEnabled = true,
@@ -74,6 +76,11 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
   const [models, setModels] = useState<Model[]>([]);
   const [selectedModel, setSelectedModel] = useState('llama3.2');
   const [showContextSources, setShowContextSources] = useState<{ [key: number]: boolean }>({});
+  const [currentThinking, setCurrentThinking] = useState<{
+    messageIndex: number;
+    startTime: number;
+    content: string;
+  } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Load available models
@@ -194,6 +201,18 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
     setInputValue('');
     setIsLoading(true);
 
+    // Start thinking process if enabled
+    const messageIndex = messages.length; // Assistant message will be at this index
+    const thinkingStartTime = Date.now();
+    
+    if (showThinkingProcess) {
+      setCurrentThinking({
+        messageIndex,
+        startTime: thinkingStartTime,
+        content: `Analyzing your question about "${userMessage.content.substring(0, 30)}..."${userMessage.content.length > 30 ? '...' : ''}`,
+      });
+    }
+
     // Save user message to backend
     if (currentConversationId) {
       await addMessageToConversation(currentConversationId, 'user', userMessage.content);
@@ -221,6 +240,9 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
       const data = await response.json();
       
       if (data.message) {
+        const thinkingEndTime = Date.now();
+        const thinkingDuration = thinkingEndTime - thinkingStartTime;
+
         // Enhanced thinking process that considers RAG and search
         let thinkingText = '';
         if (showThinkingProcess) {
@@ -246,12 +268,16 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
           content: data.message.content,
           timestamp: new Date().toISOString(),
           thinking: thinkingText || undefined,
+          thinkingDuration: showThinkingProcess ? thinkingDuration : undefined,
           context_sources: data.context_sources || [],
           rag_used: data.rag_used || false,
           search_used: data.search_used || false,
         };
 
         setMessages(prev => [...prev, assistantMessage]);
+
+        // Stop thinking process
+        setCurrentThinking(null);
 
         // Save assistant message to backend
         if (currentConversationId) {
@@ -260,13 +286,40 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
       }
     } catch (error) {
       console.error('Failed to send message:', error);
+      
+      // For demonstration purposes, show thinking process even on error
+      if (showThinkingProcess && currentThinking) {
+        // Simulate a short thinking process for demo
+        const thinkingEndTime = Date.now();
+        const thinkingDuration = Math.max(2000, thinkingEndTime - thinkingStartTime); // Minimum 2 seconds for demo
+        
+        const demoMessage: Message = {
+          role: 'assistant',
+          content: 'Sorry, I encountered an error. Please make sure Ollama is running and try again.',
+          timestamp: new Date().toISOString(),
+          thinking: currentThinking.content + '\n\nEncountered connection error. Unable to process request.',
+          thinkingDuration: thinkingDuration,
+        };
+        
+        // Show the thinking process for a moment before the error message
+        setTimeout(() => {
+          setMessages(prev => [...prev, demoMessage]);
+          setCurrentThinking(null);
+          setIsLoading(false);
+        }, 1500); // Wait 1.5 seconds to show the thinking animation
+        
+        return; // Don't set loading to false immediately
+      }
+      
+      // Stop thinking process on error
+      setCurrentThinking(null);
+      
       const errorMessage: Message = {
         role: 'assistant',
         content: 'Sorry, I encountered an error. Please make sure Ollama is running and try again.',
         timestamp: new Date().toISOString(),
       };
       setMessages(prev => [...prev, errorMessage]);
-    } finally {
       setIsLoading(false);
     }
   };
@@ -381,22 +434,14 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                   maxWidth: '80%',
                 }}
               >
-                {/* Show thinking process if enabled and available */}
-                {showThinkingProcess && message.thinking && message.role === 'assistant' && (
-                  <Box sx={{ mb: 2, p: 1, bgcolor: 'rgba(255, 255, 255, 0.05)', borderRadius: 1 }}>
-                    <Typography
-                      variant="caption"
-                      sx={{
-                        color: 'text.secondary',
-                        fontStyle: 'italic',
-                        fontSize: '0.75rem',
-                        whiteSpace: 'pre-wrap',
-                        wordBreak: 'break-word',
-                      }}
-                    >
-                      💭 {message.thinking}
-                    </Typography>
-                  </Box>
+                {/* Show thinking process for assistant messages */}
+                {message.role === 'assistant' && showThinkingProcess && (
+                  <ThinkingProcess
+                    isThinking={currentThinking?.messageIndex === index}
+                    thinkingContent={message.thinking || currentThinking?.content || ''}
+                    thinkingDuration={message.thinkingDuration}
+                    showDropdown={true}
+                  />
                 )}
                 
                 <Typography
@@ -487,7 +532,26 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
             </Box>
           ))
         )}
-        {isLoading && (
+        {/* Show thinking process for current message being processed */}
+        {isLoading && currentThinking && (
+          <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
+            <Avatar sx={{ bgcolor: 'secondary.main', width: 32, height: 32 }}>
+              <BotIcon />
+            </Avatar>
+            <Paper elevation={1} sx={{ p: 2, bgcolor: 'background.paper', flex: 1, maxWidth: '80%' }}>
+              {showThinkingProcess && (
+                <ThinkingProcess
+                  isThinking={true}
+                  thinkingContent={currentThinking.content}
+                  showDropdown={false}
+                />
+              )}
+              <CircularProgress size={20} />
+            </Paper>
+          </Box>
+        )}
+        {/* Fallback loading indicator when thinking is disabled */}
+        {isLoading && !currentThinking && (
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
             <Avatar sx={{ bgcolor: 'secondary.main', width: 32, height: 32 }}>
               <BotIcon />
