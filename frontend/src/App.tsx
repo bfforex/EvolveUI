@@ -8,6 +8,8 @@ import { WorkpadPanel } from './components/workpad/WorkpadPanel';
 import { TopBar } from './components/layout/TopBar';
 import { SettingsPanel } from './components/settings/SettingsPanel';
 import { KnowledgePanel } from './components/settings/KnowledgePanel';
+import { FileUploadDialog } from './components/chat/FileUploadDialog';
+import { CodeExecutionDialog } from './components/chat/CodeExecutionDialog';
 import './App.css';
 
 // Create dark theme matching the color scheme requirements
@@ -36,6 +38,8 @@ function App() {
   const [isWorkpadOpen, setIsWorkpadOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isKnowledgeOpen, setIsKnowledgeOpen] = useState(false);
+  const [isFileUploadOpen, setIsFileUploadOpen] = useState(false);
+  const [isCodeExecutionOpen, setIsCodeExecutionOpen] = useState(false);
   const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
   
   // Load settings from localStorage
@@ -52,6 +56,8 @@ function App() {
       showThinkingProcess: false,
       webSearchEnabled: true,
       evolverEnabled: false,
+      ragEnabled: true,
+      persistentMemory: true,
     };
   });
 
@@ -87,6 +93,8 @@ function App() {
           onToggleWorkpad={() => setIsWorkpadOpen(!isWorkpadOpen)}
           onOpenSettings={() => setIsSettingsOpen(true)}
           onOpenKnowledge={() => setIsKnowledgeOpen(true)}
+          onOpenFileUpload={() => setIsFileUploadOpen(true)}
+          onOpenCodeExecution={() => setIsCodeExecutionOpen(true)}
           isWorkpadOpen={isWorkpadOpen}
         />
         
@@ -106,6 +114,8 @@ function App() {
             showThinkingProcess={settings.showThinkingProcess}
             webSearchEnabled={settings.webSearchEnabled}
             evolverEnabled={settings.evolverEnabled}
+            ragEnabled={settings.ragEnabled}
+            settings={settings}
           />
           
           {/* Right Panel - Workpad */}
@@ -124,6 +134,22 @@ function App() {
         <KnowledgePanel 
           open={isKnowledgeOpen}
           onClose={() => setIsKnowledgeOpen(false)}
+        />
+
+        {/* File Upload Dialog */}
+        <FileUploadDialog
+          open={isFileUploadOpen}
+          onClose={() => setIsFileUploadOpen(false)}
+          onUploadComplete={(results) => {
+            console.log('Files uploaded:', results);
+            // Optionally show notification or refresh knowledge base
+          }}
+        />
+
+        {/* Code Execution Dialog */}
+        <CodeExecutionDialog
+          open={isCodeExecutionOpen}
+          onClose={() => setIsCodeExecutionOpen(false)}
         />
       </Box>
     </ThemeProvider>
