@@ -24,8 +24,17 @@ fi
 echo "📦 Installing backend dependencies..."
 cd backend
 python3 -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
+
+# Check if running on Windows (git bash or similar)
+if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "win32" ]]; then
+    echo "🪟 Detected Windows environment"
+    source venv/Scripts/activate
+    echo "📦 Installing Windows-compatible dependencies..."
+    pip install -r requirements-windows.txt
+else
+    source venv/bin/activate
+    pip install -r requirements.txt
+fi
 cd ..
 
 echo "📦 Installing frontend dependencies..."
@@ -37,7 +46,11 @@ echo "✅ Installation complete!"
 echo ""
 echo "🏃 To start EvolveUI:"
 echo "1. Start Ollama: ollama serve"
-echo "2. Start backend: cd backend && source venv/bin/activate && uvicorn main:app --reload --host 0.0.0.0 --port 8000"
+echo "2. Start backend:"
+echo "   # On Linux/macOS:"
+echo "   cd backend && source venv/bin/activate && uvicorn main:app --reload --host 0.0.0.0 --port 8000"
+echo "   # On Windows:"
+echo "   cd backend && venv\\Scripts\\activate && uvicorn main:app --reload --host 0.0.0.0 --port 8000"
 echo "3. Start frontend: cd frontend && npm start"
 echo "4. Open http://localhost:3000"
 echo ""

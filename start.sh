@@ -45,8 +45,15 @@ if [ ! -d "venv" ]; then
 fi
 
 echo "   Activating virtual environment and installing dependencies..."
-source venv/bin/activate
-pip install -q -r requirements.txt
+# Check if running on Windows (git bash or similar)
+if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "win32" ]]; then
+    echo "🪟 Detected Windows environment"
+    source venv/Scripts/activate
+    pip install -q -r requirements-windows.txt
+else
+    source venv/bin/activate
+    pip install -q -r requirements.txt
+fi
 cd ..
 
 # Frontend setup
@@ -67,7 +74,10 @@ echo "1. 📡 Start Ollama (in a separate terminal):"
 echo "   ollama serve"
 echo ""
 echo "2. 🖥️  Start the backend (in a separate terminal):"
+echo "   # On Linux/macOS:"
 echo "   cd backend && source venv/bin/activate && uvicorn main:app --reload --host 0.0.0.0 --port 8000"
+echo "   # On Windows:"
+echo "   cd backend && venv\\Scripts\\activate && uvicorn main:app --reload --host 0.0.0.0 --port 8000"
 echo ""
 echo "3. 🌐 Start the frontend:"
 echo "   cd frontend && npm start"

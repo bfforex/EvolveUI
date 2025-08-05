@@ -34,6 +34,8 @@ EvolveUI is a comprehensive local web interface for interacting with Ollama mode
 - Python 3.8+
 - Ollama installed and running locally
 
+**Note for Windows users**: EvolveUI now supports Windows! The `uvloop` dependency (which provides performance improvements on Unix systems) is automatically excluded on Windows platforms to ensure compatibility.
+
 ### Installation
 
 1. **Clone the repository**
@@ -46,7 +48,13 @@ EvolveUI is a comprehensive local web interface for interacting with Ollama mode
    ```bash
    cd backend
    python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   
+   # On Windows:
+   venv\Scripts\activate
+   pip install -r requirements-windows.txt
+   
+   # On Linux/macOS:
+   source venv/bin/activate
    pip install -r requirements.txt
    ```
 
