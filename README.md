@@ -13,7 +13,7 @@ EvolveUI is a comprehensive local web interface for interacting with Ollama mode
 - **Real-time Chat**: Seamless communication with Ollama models
 - **Workpad/Canvas**: Integrated code and document editor with file management
 
-### Advanced Capabilities (Planned)
+### Advanced Capabilities
 - **Persistent Memory**: Knowledge database integration (ChromaDB)
 - **RAG (Retrieval Augmented Generation)**: Context-aware responses
 - **Auto Web Search**: Intelligent web search integration
@@ -176,10 +176,10 @@ npm run build
 - [x] Workpad/Canvas functionality
 
 ### Phase 2: Enhanced AI (In Progress)
-- [ ] ChromaDB integration for RAG
-- [ ] Web search integration
-- [ ] Settings panel and configuration
-- [ ] Document processing (PDF, DOCX, TXT)
+- [x] ChromaDB integration for RAG
+- [x] Web search integration
+- [x] Settings panel and configuration
+- [x] Document processing (PDF, DOCX, TXT)
 
 ### Phase 3: Advanced Features
 - [ ] Code execution environment
