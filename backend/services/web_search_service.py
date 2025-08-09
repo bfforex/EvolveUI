@@ -85,6 +85,79 @@ class WebSearchService:
                 await asyncio.sleep(wait_time)
         self.last_request_time[service] = time.time()
         
+    def _deduplicate_results(self, results: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """Remove duplicate results and rank by relevance"""
+        if not results:
+            return results
+        
+        seen_urls = set()
+        seen_content = set()
+        deduplicated = []
+        
+        for result in results:
+            url = result.get('url', '').lower().strip()
+            content = result.get('snippet', '').lower().strip()
+            title = result.get('title', '').lower().strip()
+            
+            # Create content hash for deduplication
+            content_hash = hash(content + title)
+            
+            # Skip if we've seen this URL or very similar content
+            if url not in seen_urls and content_hash not in seen_content:
+                seen_urls.add(url)
+                seen_content.add(content_hash)
+                
+                # Add quality score based on multiple factors
+                quality_score = self._calculate_quality_score(result)
+                result['quality_score'] = quality_score
+                
+                deduplicated.append(result)
+        
+        # Sort by quality score (highest first)
+        deduplicated.sort(key=lambda x: x.get('quality_score', 0), reverse=True)
+        return deduplicated
+    
+    def _calculate_quality_score(self, result: Dict[str, Any]) -> float:
+        """Calculate quality score for search result ranking"""
+        score = 0.5  # Base score
+        
+        title = result.get('title', '')
+        snippet = result.get('snippet', '')
+        url = result.get('url', '')
+        
+        # Title quality (length, informativeness)
+        if title:
+            if 10 <= len(title) <= 100:  # Good title length
+                score += 0.1
+            if not any(word in title.lower() for word in ['404', 'error', 'not found']):
+                score += 0.1
+        
+        # Snippet quality (length, informativeness)
+        if snippet:
+            if 50 <= len(snippet) <= 300:  # Good snippet length
+                score += 0.15
+            if snippet.count('.') >= 1:  # Has sentences
+                score += 0.05
+        
+        # URL quality
+        if url:
+            # Prefer https
+            if url.startswith('https://'):
+                score += 0.05
+            
+            # Prefer well-known domains
+            trusted_domains = ['wikipedia.org', 'github.com', 'stackoverflow.com', 
+                             'docs.python.org', 'developer.mozilla.org']
+            if any(domain in url for domain in trusted_domains):
+                score += 0.15
+            
+            # Penalize very long URLs (might be auto-generated)
+            if len(url) > 150:
+                score -= 0.05
+        
+        # Ensure score is between 0 and 1
+        return max(0.0, min(1.0, score))
+    
     def _clean_search_query(self, query: str) -> str:
         """Clean and optimize search query"""
         # Remove special characters and clean up
@@ -93,63 +166,101 @@ class WebSearchService:
         query = ' '.join(query.split())
         return query.strip()
     
-    def _determine_search_intent(self, message: str) -> Dict[str, Any]:
-        """Determine if a message would benefit from web search"""
+    def _enhance_search_intent(self, message: str) -> Dict[str, Any]:
+        """Enhanced search intent detection with improved accuracy"""
         
-        # Keywords that suggest web search would be helpful
-        search_indicators = [
-            'current', 'latest', 'recent', 'news', 'today', 'now',
-            'what is', 'who is', 'where is', 'when did', 'how to',
-            'price of', 'cost of', 'weather', 'stock price',
-            'definition of', 'meaning of', 'search for', 'find',
-            'lookup', 'google', 'research'
+        # Explicit search commands
+        explicit_search = [
+            'search for', 'find information about', 'look up', 'google',
+            'search', 'find', 'lookup', 'research'
         ]
         
-        # Topics that often need current information
-        current_topics = [
-            'weather', 'news', 'stock', 'cryptocurrency', 'bitcoin',
-            'election', 'sports', 'market', 'breaking', 'update'
+        # Current/time-sensitive indicators
+        current_indicators = [
+            'current', 'latest', 'recent', 'today', 'now', 'this year',
+            'update', 'news', 'breaking', 'live', 'real-time'
+        ]
+        
+        # Question words that often need web search
+        question_indicators = [
+            'what is', 'who is', 'where is', 'when did', 'how to',
+            'how much', 'why is', 'which', 'define', 'explain'
+        ]
+        
+        # Topics that frequently need current information
+        dynamic_topics = [
+            'weather', 'stock price', 'cryptocurrency', 'bitcoin', 'news',
+            'sports score', 'election', 'market', 'price', 'cost'
         ]
         
         message_lower = message.lower()
-        
-        # Check for search indicators
         search_score = 0
-        for indicator in search_indicators:
-            if indicator in message_lower:
-                search_score += 1
+        indicators_found = []
         
-        # Check for current topics
-        for topic in current_topics:
+        # Check for explicit search commands (high weight)
+        for indicator in explicit_search:
+            if indicator in message_lower:
+                search_score += 3
+                indicators_found.append(f"explicit: {indicator}")
+        
+        # Check for current/time-sensitive indicators (high weight)
+        for indicator in current_indicators:
+            if indicator in message_lower:
+                search_score += 2
+                indicators_found.append(f"current: {indicator}")
+        
+        # Check for question patterns (medium weight)
+        for indicator in question_indicators:
+            if indicator in message_lower:
+                search_score += 1.5
+                indicators_found.append(f"question: {indicator}")
+        
+        # Check for dynamic topics (medium weight)
+        for topic in dynamic_topics:
             if topic in message_lower:
                 search_score += 2
+                indicators_found.append(f"dynamic: {topic}")
         
-        # Question patterns
-        question_patterns = [
-            r'\bwhat\s+is\b',
-            r'\bwho\s+is\b',
-            r'\bwhere\s+is\b',
-            r'\bwhen\s+did\b',
-            r'\bhow\s+to\b',
-            r'\bhow\s+much\b',
-            r'\bwhy\s+is\b'
-        ]
+        # URL or domain mentions (low weight, might be referential)
+        if re.search(r'https?://|www\.|\.com|\.org|\.net', message_lower):
+            search_score += 0.5
+            indicators_found.append("url_mention")
         
-        for pattern in question_patterns:
-            if re.search(pattern, message_lower):
-                search_score += 1
+        # Length-based heuristics
+        if len(message.split()) <= 5:  # Short queries often benefit from search
+            search_score += 0.5
+            indicators_found.append("short_query")
         
-        should_search = search_score >= 1
+        # Calculate confidence based on score
+        confidence = min(search_score / 5.0, 1.0)  # Normalize to 0-1
+        should_search = search_score >= 2.0  # Threshold for search decision
         
         return {
             "should_search": should_search,
-            "confidence": min(search_score / 3.0, 1.0),
-            "indicators_found": search_score,
-            "suggested_query": self._clean_search_query(message) if should_search else None
+            "confidence": confidence,
+            "search_score": search_score,
+            "indicators_found": indicators_found,
+            "suggested_query": self._clean_search_query(message) if should_search else None,
+            "query_type": self._classify_query_type(message_lower)
         }
     
+    def _classify_query_type(self, message: str) -> str:
+        """Classify the type of query for better search strategy"""
+        if any(word in message for word in ['weather', 'temperature', 'forecast']):
+            return 'weather'
+        elif any(word in message for word in ['news', 'breaking', 'report']):
+            return 'news'
+        elif any(word in message for word in ['price', 'cost', 'buy', 'sell', 'stock']):
+            return 'price'
+        elif any(word in message for word in ['how to', 'tutorial', 'guide', 'instructions']):
+            return 'tutorial'
+        elif any(word in message for word in ['define', 'meaning', 'what is', 'definition']):
+            return 'definition'
+        else:
+            return 'general'
+    
     async def search_web(self, query: str, max_results: int = 5, engine: str = None) -> Dict[str, Any]:
-        """Search the web using the specified engine"""
+        """Search the web using the specified engine with enhanced result processing"""
         engine = engine or self.config.get('default_engine', 'duckduckgo')
         engine_config = self._get_search_config(engine)
         
@@ -166,20 +277,47 @@ class WebSearchService:
             await self._rate_limit_check(engine)
             cleaned_query = self._clean_search_query(query)
             
+            # Get raw results from engine
+            raw_results = None
             if engine == 'duckduckgo':
-                return await self._search_duckduckgo(cleaned_query, max_results)
+                raw_results = await self._search_duckduckgo(cleaned_query, max_results * 2)  # Get more for deduplication
             elif engine == 'searxng':
-                return await self._search_searxng(cleaned_query, max_results, engine_config)
+                raw_results = await self._search_searxng(cleaned_query, max_results * 2, engine_config)
             elif engine == 'google':
-                return await self._search_google(cleaned_query, max_results, engine_config)
+                raw_results = await self._search_google(cleaned_query, max_results, engine_config)
             elif engine == 'bing':
-                return await self._search_bing(cleaned_query, max_results, engine_config)
+                raw_results = await self._search_bing(cleaned_query, max_results, engine_config)
             else:
                 return {
                     "query": query,
                     "results": [],
                     "success": False,
                     "error": f"Unsupported search engine: {engine}",
+                    "source": engine
+                }
+            
+            if raw_results and raw_results.get('success'):
+                # Apply deduplication and ranking
+                processed_results = self._deduplicate_results(raw_results['results'])
+                
+                # Limit to requested number after processing
+                final_results = processed_results[:max_results]
+                
+                return {
+                    "query": query,
+                    "cleaned_query": cleaned_query,
+                    "results": final_results,
+                    "total_found": len(raw_results['results']),
+                    "after_deduplication": len(processed_results),
+                    "success": True,
+                    "source": engine
+                }
+            else:
+                return raw_results or {
+                    "query": query,
+                    "results": [],
+                    "success": False,
+                    "error": "No results from search engine",
                     "source": engine
                 }
                 
@@ -439,11 +577,18 @@ class WebSearchService:
             return []
     
     async def auto_search(self, user_message: str, engine: str = None) -> Optional[Dict[str, Any]]:
-        """Automatically determine if search is needed and perform it"""
-        intent = self._determine_search_intent(user_message)
+        """Automatically determine if search is needed and perform it with enhanced intent detection"""
+        intent = self._enhance_search_intent(user_message)
         
         if not intent["should_search"]:
             return None
+        
+        # Determine optimal number of results based on query type
+        max_results = 5
+        if intent["query_type"] == "news":
+            max_results = 3
+        elif intent["query_type"] in ["tutorial", "definition"]:
+            max_results = 7
         
         # Perform web search with retry logic
         max_retries = 3
@@ -451,11 +596,17 @@ class WebSearchService:
         
         for attempt in range(max_retries):
             try:
-                search_results = await self.search_web(intent["suggested_query"], max_results=3, engine=engine)
+                search_results = await self.search_web(
+                    intent["suggested_query"], 
+                    max_results=max_results, 
+                    engine=engine
+                )
                 
                 if search_results["success"]:
-                    # Add intent information
+                    # Add intent information and enhanced metadata
                     search_results["search_intent"] = intent
+                    search_results["auto_search"] = True
+                    search_results["attempt"] = attempt + 1
                     return search_results
                 else:
                     last_error = search_results.get("error", "Unknown error")
@@ -474,7 +625,8 @@ class WebSearchService:
             "success": False,
             "error": f"Auto search failed after {max_retries} attempts: {last_error}",
             "source": engine or self.config.get('default_engine', 'duckduckgo'),
-            "search_intent": intent
+            "search_intent": intent,
+            "auto_search": True
         }
     
     def get_service_status(self) -> Dict[str, Any]:

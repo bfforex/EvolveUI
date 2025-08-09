@@ -13,23 +13,76 @@ import { CodeExecutionDialog } from './components/chat/CodeExecutionDialog';
 import { ThinkingDemo } from './components/chat/ThinkingDemo';
 import './App.css';
 
-// Create dark theme matching the color scheme requirements
-const darkTheme = createTheme({
+// Create minimalist all-black theme
+const minimalistBlackTheme = createTheme({
   palette: {
     mode: 'dark',
     primary: {
-      main: '#1976d2', // Deep blue
+      main: '#ffffff', // White for primary elements on black
+      contrastText: '#000000',
     },
     secondary: {
-      main: '#ffd700', // Gold accent
+      main: '#888888', // Subtle gray accent
+      contrastText: '#ffffff',
     },
     background: {
-      default: '#0D1117', // GitHub-style dark background
-      paper: '#1a2332', // Dark blue
+      default: '#000000', // Pure black background
+      paper: '#111111', // Very dark gray for cards/panels
     },
     text: {
-      primary: '#ffffff',
-      secondary: '#b0bec5', // Grayish blue
+      primary: '#ffffff', // White text
+      secondary: '#cccccc', // Light gray for secondary text
+    },
+    divider: '#333333', // Dark gray for dividers
+    action: {
+      hover: '#222222', // Subtle hover effect
+      selected: '#333333', // Selection background
+    },
+  },
+  components: {
+    // Override component styles for all-black theme
+    MuiPaper: {
+      styleOverrides: {
+        root: {
+          backgroundColor: '#111111',
+          borderColor: '#333333',
+        },
+      },
+    },
+    MuiAppBar: {
+      styleOverrides: {
+        root: {
+          backgroundColor: '#000000',
+          borderBottom: '1px solid #333333',
+        },
+      },
+    },
+    MuiButton: {
+      styleOverrides: {
+        root: {
+          borderColor: '#333333',
+          '&:hover': {
+            backgroundColor: '#222222',
+          },
+        },
+      },
+    },
+    MuiTextField: {
+      styleOverrides: {
+        root: {
+          '& .MuiOutlinedInput-root': {
+            '& fieldset': {
+              borderColor: '#333333',
+            },
+            '&:hover fieldset': {
+              borderColor: '#555555',
+            },
+            '&.Mui-focused fieldset': {
+              borderColor: '#ffffff',
+            },
+          },
+        },
+      },
     },
   },
 });
@@ -81,7 +134,7 @@ function App() {
   }, []);
 
   return (
-    <ThemeProvider theme={darkTheme}>
+    <ThemeProvider theme={minimalistBlackTheme}>
       <CssBaseline />
       
       {/* Show demo if requested */}
@@ -91,9 +144,9 @@ function App() {
             <button 
               onClick={() => setShowDemo(false)}
               style={{
-                background: '#1976d2',
-                color: 'white',
-                border: 'none',
+                background: '#ffffff',
+                color: '#000000',
+                border: '1px solid #333333',
                 padding: '8px 16px',
                 borderRadius: '4px',
                 cursor: 'pointer'
@@ -127,9 +180,9 @@ function App() {
             <button 
               onClick={() => setShowDemo(true)}
               style={{
-                background: '#ffd700',
-                color: 'black',
-                border: 'none',
+                background: '#888888',
+                color: '#ffffff',
+                border: '1px solid #333333',
                 padding: '8px 16px',
                 borderRadius: '4px',
                 cursor: 'pointer',
