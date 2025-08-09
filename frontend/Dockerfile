@@ -25,6 +25,10 @@ RUN apk add --no-cache curl
 # Copy nginx configuration
 COPY --from=builder /app/build /usr/share/nginx/html
 
+# Create directory structure and symlink for static files
+RUN mkdir -p /etc/nginx/html && \
+    ln -sf /usr/share/nginx/html/static /etc/nginx/html/static
+
 # Create custom nginx config for better security and performance
 RUN echo 'server { \
     listen 80; \

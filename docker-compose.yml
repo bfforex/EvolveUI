@@ -1,23 +1,56 @@
 version: '3.8'
 
 services:
+  chromadb:
+    image: chromadb/chroma:latest
+    ports:
+      - "8000:8000"
+    volumes:
+      - chromadb_data:/data
+    environment:
+      - CHROMA_DB_IMPL=duckdb+parquet
+      - CHROMA_PERSIST_DIR=/data
+      - CHROMA_SERVER_AUTH_CREDENTIALS_PROVIDER=chromadb.auth.token.TokenAuthCredentialsProvider
+      - CHROMA_SERVER_AUTH_TOKEN_TRANSPORT_HEADER=X-Chroma-Token
+    networks:
+      - evolveui-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/heartbeat"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+        reservations:
+          memory: 256M
+
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
     ports:
-      - "8000:8000"
+      - "8001:8000"
     environment:
       - OLLAMA_HOST=host.docker.internal:11434
       - LOG_LEVEL=INFO
       - CHROMA_DB_IMPL=duckdb+parquet
       - CHROMA_DB_DIR=/app/chromadb_data
+      - CHROMADB_HOST=chromadb
+      - CHROMADB_PORT=8000
     volumes:
       - ./backend/conversations.json:/app/conversations.json
       - ./backend/chromadb_data:/app/chromadb_data
       - backend_logs:/app/logs
+      - chromadb_data:/data
     networks:
       - evolveui-network
+    depends_on:
+      chromadb:
+        condition: service_healthy
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
@@ -42,7 +75,7 @@ services:
       backend:
         condition: service_healthy
     environment:
-      - REACT_APP_BACKEND_URL=http://localhost:8000
+      - REACT_APP_BACKEND_URL=http://localhost:8001
       - REACT_APP_VERSION=1.1.0
     networks:
       - evolveui-network
@@ -62,6 +95,8 @@ services:
 
 volumes:
   backend_logs:
+    driver: local
+  chromadb_data:
     driver: local
 
 networks:

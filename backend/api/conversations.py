@@ -44,18 +44,32 @@ def save_conversations(conversations):
     # Convert datetime objects to strings for JSON serialization
     data = []
     for conv in conversations:
+        # Handle both datetime objects and ISO strings
+        created_at = conv['created_at']
+        if hasattr(created_at, 'isoformat'):
+            created_at = created_at.isoformat()
+        
+        updated_at = conv['updated_at']
+        if hasattr(updated_at, 'isoformat'):
+            updated_at = updated_at.isoformat()
+        
         conv_data = {
             'id': conv['id'],
             'title': conv['title'],
-            'created_at': conv['created_at'].isoformat(),
-            'updated_at': conv['updated_at'].isoformat(),
+            'created_at': created_at,
+            'updated_at': updated_at,
             'messages': []
         }
         for msg in conv['messages']:
+            # Handle both datetime objects and ISO strings for message timestamps
+            timestamp = msg['timestamp']
+            if hasattr(timestamp, 'isoformat'):
+                timestamp = timestamp.isoformat()
+            
             conv_data['messages'].append({
                 'role': msg['role'],
                 'content': msg['content'],
-                'timestamp': msg['timestamp'].isoformat()
+                'timestamp': timestamp
             })
         data.append(conv_data)
     
