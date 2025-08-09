@@ -25,6 +25,13 @@ CONVERSATIONS_FILE = "conversations.json"
 def load_conversations():
     """Load conversations from file"""
     if os.path.exists(CONVERSATIONS_FILE):
+        # Check if it's a directory (which shouldn't happen)
+        if os.path.isdir(CONVERSATIONS_FILE):
+            print(f"Warning: {CONVERSATIONS_FILE} is a directory, removing it...")
+            import shutil
+            shutil.rmtree(CONVERSATIONS_FILE)
+            return []
+        
         try:
             with open(CONVERSATIONS_FILE, 'r') as f:
                 data = json.load(f)
@@ -35,12 +42,19 @@ def load_conversations():
                     for msg in conv['messages']:
                         msg['timestamp'] = datetime.fromisoformat(msg['timestamp'])
                 return data
-        except:
+        except Exception as e:
+            print(f"Error loading conversations: {e}")
             return []
     return []
 
 def save_conversations(conversations):
     """Save conversations to file"""
+    # Ensure the directory doesn't exist as a file
+    if os.path.exists(CONVERSATIONS_FILE) and os.path.isdir(CONVERSATIONS_FILE):
+        print(f"Warning: {CONVERSATIONS_FILE} is a directory, removing it...")
+        import shutil
+        shutil.rmtree(CONVERSATIONS_FILE)
+    
     # Convert datetime objects to strings for JSON serialization
     data = []
     for conv in conversations:
@@ -73,8 +87,12 @@ def save_conversations(conversations):
             })
         data.append(conv_data)
     
-    with open(CONVERSATIONS_FILE, 'w') as f:
-        json.dump(data, f, indent=2)
+    try:
+        with open(CONVERSATIONS_FILE, 'w') as f:
+            json.dump(data, f, indent=2)
+    except Exception as e:
+        print(f"Error saving conversations: {e}")
+        raise
 
 @router.get("/")
 async def get_conversations():

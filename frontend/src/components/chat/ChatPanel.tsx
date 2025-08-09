@@ -74,7 +74,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [models, setModels] = useState<Model[]>([]);
-  const [selectedModel, setSelectedModel] = useState('llama3.2');
+  const [selectedModel, setSelectedModel] = useState('');
   const [showContextSources, setShowContextSources] = useState<{ [key: number]: boolean }>({});
   const [currentThinking, setCurrentThinking] = useState<{
     messageIndex: number;
@@ -103,7 +103,9 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
   }, [messages]);
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (messagesEndRef.current && typeof messagesEndRef.current.scrollIntoView === 'function') {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
   };
 
   const fetchModels = async () => {
@@ -112,18 +114,22 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
       const data = await response.json();
       if (data.models && data.models.length > 0) {
         setModels(data.models);
-        if (data.models[0].name) {
+        if (data.models[0].name && !selectedModel) {
           setSelectedModel(data.models[0].name);
         }
       }
     } catch (error) {
       console.error('Failed to fetch models:', error);
       // Set default models if Ollama is not available
-      setModels([
+      const defaultModels = [
         { name: 'llama3.2' },
         { name: 'llama3.1' },
         { name: 'codellama' },
-      ]);
+      ];
+      setModels(defaultModels);
+      if (!selectedModel) {
+        setSelectedModel(defaultModels[0].name);
+      }
     }
   };
 
