@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   Box,
   Paper,
@@ -83,11 +83,6 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
   } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Load available models
-  useEffect(() => {
-    fetchModels();
-  }, []);
-
   // Load conversation messages when conversation changes
   useEffect(() => {
     if (conversationId) {
@@ -108,7 +103,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
     }
   };
 
-  const fetchModels = async () => {
+  const fetchModels = useCallback(async () => {
     try {
       const response = await fetch('http://localhost:8000/api/models/');
       const data = await response.json();
@@ -131,7 +126,12 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
         setSelectedModel(defaultModels[0].name);
       }
     }
-  };
+  }, [selectedModel]);
+
+  // Load available models on component mount
+  useEffect(() => {
+    fetchModels();
+  }, [fetchModels]);
 
   const fetchConversationMessages = async (convId: string) => {
     try {

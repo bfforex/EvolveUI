@@ -434,7 +434,7 @@ class TestWebSearchService:
         
         engines = service.get_supported_engines()
         
-        assert len(engines) == 4  # DuckDuckGo, SearXNG, Google, Bing
+        assert len(engines) == 5  # DuckDuckGo, SearXNG, bfforexseaXNG, Google, Bing
         
         # Check DuckDuckGo entry
         ddg_engine = next(e for e in engines if e['name'] == 'duckduckgo')
