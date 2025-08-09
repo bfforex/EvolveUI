@@ -3,12 +3,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from api.models import router as models_router
 from api.conversations import router as conversations_router
 from api.search import router as search_router
-from utils.system_status import get_system_status
+from utils.system_status import get_system_status, get_performance_metrics
 
 app = FastAPI(
     title="EvolveUI Backend API",
-    version="1.0.0",
-    description="Enhanced Local Interface for Ollama Models with RAG and Knowledge Management",
+    version="1.1.0",
+    description="Enhanced Local Interface for Ollama Models with RAG, Knowledge Management, and Comprehensive Monitoring",
     docs_url="/docs",
     redoc_url="/redoc"
 )
@@ -32,17 +32,23 @@ def read_root():
     """API root endpoint"""
     return {
         "message": "EvolveUI Backend API",
-        "version": "1.0.0",
+        "version": "1.1.0",
         "docs": "/docs",
-        "status": "/api/status"
+        "status": "/api/status",
+        "metrics": "/api/metrics"
     }
 
 @app.get("/health", tags=["system"])
 def health_check():
     """Simple health check endpoint"""
-    return {"status": "healthy"}
+    return {"status": "healthy", "version": "1.1.0"}
 
 @app.get("/api/status", tags=["system"])
 async def get_api_status():
     """Get comprehensive system status including all services"""
     return await get_system_status()
+
+@app.get("/api/metrics", tags=["system"])
+async def get_api_metrics():
+    """Get detailed performance metrics and system information"""
+    return await get_performance_metrics()
