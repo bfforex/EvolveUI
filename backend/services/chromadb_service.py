@@ -11,10 +11,10 @@ from contextlib import asynccontextmanager
 logger = logging.getLogger(__name__)
 
 class ChromaDBService:
-    def __init__(self, host: str = "localhost", port: int = 8001, max_retries: int = 3):
+    def __init__(self, host: str = None, port: int = None, max_retries: int = 3):
         """Initialize ChromaDB service with enhanced connection management"""
-        self.host = host
-        self.port = port
+        self.host = host or os.getenv("CHROMADB_HOST", "localhost")
+        self.port = port or int(os.getenv("CHROMADB_PORT", "8000"))
         self.max_retries = max_retries
         self.client = None
         self.collection = None
@@ -32,8 +32,7 @@ class ChromaDBService:
                 # Try HTTP client first
                 self.client = chromadb.HttpClient(
                     host=self.host,
-                    port=self.port,
-                    settings=Settings(allow_reset=True)
+                    port=self.port
                 )
                 
                 # Test the connection
@@ -48,17 +47,12 @@ class ChromaDBService:
                     logger.info("Attempting to use embedded ChromaDB...")
                     try:
                         # Create data directory for ChromaDB
-                        data_dir = os.path.join(os.getcwd(), "chromadb_data")
+                        data_dir = "/data"
                         os.makedirs(data_dir, exist_ok=True)
                         
                         # Create embedded client
                         self.client = chromadb.PersistentClient(
-                            path=data_dir,
-                            settings=Settings(
-                                allow_reset=True,
-                                anonymized_telemetry=False,
-                                is_persistent=True
-                            )
+                            path=data_dir
                         )
                         logger.info(f"Connected to embedded ChromaDB at {data_dir}")
                         break
