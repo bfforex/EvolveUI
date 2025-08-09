@@ -154,6 +154,9 @@ class ChromaDBService:
 
     async def search_documents(self, query: str, limit: int = 5, distance_threshold: float = 0.8) -> List[Dict[str, Any]]:
         """Search for similar documents with improved relevance filtering"""
+        if not self._check_connection():
+            return []
+            
         async with self._safe_operation():
             try:
                 results = self.collection.query(

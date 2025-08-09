@@ -53,6 +53,13 @@ class WebSearchService:
                 'instance_url': 'https://searx.be',
                 'rate_limit': 1.0
             },
+            'bfforexseaxng': {
+                'enabled': True,
+                'requires_api_key': False,
+                'instance_url': 'http://localhost:8081',
+                'rate_limit': 1.0,
+                'description': 'Local bfforex SearXNG instance'
+            },
             'google': {
                 'enabled': False,
                 'requires_api_key': True,
@@ -281,7 +288,7 @@ class WebSearchService:
             raw_results = None
             if engine == 'duckduckgo':
                 raw_results = await self._search_duckduckgo(cleaned_query, max_results * 2)  # Get more for deduplication
-            elif engine == 'searxng':
+            elif engine == 'searxng' or engine == 'bfforexseaxng':
                 raw_results = await self._search_searxng(cleaned_query, max_results * 2, engine_config)
             elif engine == 'google':
                 raw_results = await self._search_google(cleaned_query, max_results, engine_config)
@@ -642,13 +649,14 @@ class WebSearchService:
             }
             
             # Check configured engines
-            for engine_name in ['searxng', 'google', 'bing']:
+            for engine_name in ['searxng', 'bfforexseaxng', 'google', 'bing']:
                 config = self._get_search_config(engine_name)
                 engines_status[engine_name] = {
                     'available': config.get('enabled', False),
                     'requires_api_key': config.get('requires_api_key', False),
                     'configured': self._is_engine_configured(engine_name, config),
-                    'features': ['web_search']
+                    'features': ['web_search'],
+                    'description': config.get('description', '')
                 }
             
             return {
@@ -672,7 +680,7 @@ class WebSearchService:
             
         if engine == 'duckduckgo':
             return DDGS_AVAILABLE and self.ddgs is not None
-        elif engine == 'searxng':
+        elif engine == 'searxng' or engine == 'bfforexseaxng':
             return bool(config.get('instance_url'))
         elif engine == 'google':
             return bool(config.get('api_key') and config.get('cx'))
@@ -700,6 +708,15 @@ class WebSearchService:
                 'features': ['web_search'],
                 'free': True,
                 'description': 'Self-hosted search engine aggregator'
+            },
+            {
+                'name': 'bfforexseaxng',
+                'display_name': 'bfforex SearXNG',
+                'requires_api_key': False,
+                'requires_instance_url': False,
+                'features': ['web_search'],
+                'free': True,
+                'description': 'Local bfforex SearXNG instance at localhost:8081'
             },
             {
                 'name': 'google',
