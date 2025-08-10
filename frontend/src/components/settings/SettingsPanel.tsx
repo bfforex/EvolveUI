@@ -115,7 +115,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ open, onClose }) =
       scheduledSearchEnabled: false,
       
       // Model Settings
-      defaultModel: 'llama3.2',
+      defaultModel: '',
       maxTokens: 2048,
       temperature: 0.7,
       streamResponses: true,

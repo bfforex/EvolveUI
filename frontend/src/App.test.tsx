@@ -2,8 +2,9 @@ import React from 'react';
 import { render, screen } from '@testing-library/react';
 import App from './App';
 
-test('renders learn react link', () => {
+test('renders EvolveUI application', () => {
   render(<App />);
-  const linkElement = screen.getByText(/learn react/i);
-  expect(linkElement).toBeInTheDocument();
+  // Look for something that should exist in the app, not a generic "learn react" link
+  const element = screen.getByRole('button', { name: /show thinking process demo/i });
+  expect(element).toBeInTheDocument();
 });
